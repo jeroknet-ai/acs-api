@@ -6,10 +6,10 @@ services:
     container_name: jnetwork-app
     restart: always
     ports:
-      # Map STB's external port 1987 to internal port 3001
-      - "1987:3001"
+      # Map STB's external port 1987 to internal port 1987
+      - "1987:1987"
     environment:
-      - PORT=3001
+      - PORT=1987
       - POLL_INTERVAL=30
       # You can modify the ACS IP here
       - GENIEACS_URL=${GENIEACS_URL:-http://192.168.1.100:7557}
