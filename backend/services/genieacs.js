@@ -153,45 +153,55 @@ function normalizeDevice(genieDevice) {
   // Smart detection for Vendor/Manufacturer
   const vendor = get('Device.DeviceInfo.Manufacturer') || 
                  get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
-                 get('Device.DeviceInfo.ManufacturerOUI') || 'Unknown';
+                 get('Device.DeviceInfo.ManufacturerOUI') || 
+                 get('_Manufacturer') || 'Unknown';
 
   // Smart detection for Model
   const model = get('Device.DeviceInfo.ModelName') || 
                 get('InternetGatewayDevice.DeviceInfo.ModelName') || 
-                get('Device.DeviceInfo.Description') || 'Unknown';
+                get('Device.DeviceInfo.ModelNumber') ||
+                get('Device.DeviceInfo.Description') || 
+                get('_ModelName') || 'Unknown';
 
   // Smart detection for IP Address
   const ipAddress = get('Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') ||
                     get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') ||
+                    get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress') ||
+                    get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress') ||
                     get('Device.ManagementServer.ConnectionRequestURL')?.split('://')[1]?.split(':')[0] || null;
 
   // Multi-vendor RX/TX Power Detection (Huawei, ZTE, Fiberhome, etc.)
-  const rxPower = get('VirtualParameters.RXPower') || 
-                  get('Device.Optical.Interface.1.Stats.OpticalSignalLevel') ||
-                  get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel') || null;
+  const rxPowerValue = get('VirtualParameters.RXPower') || 
+                       get('Device.Optical.Interface.1.Stats.OpticalSignalLevel') ||
+                       get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel') ||
+                       get('Device.Optical.Interface.1.OpticalSignalLevel') || null;
 
-  const txPower = get('VirtualParameters.TXPower') || 
-                  get('Device.Optical.Interface.1.Stats.TransmitOpticalLevel') || null;
+  const txPowerValue = get('VirtualParameters.TXPower') || 
+                       get('Device.Optical.Interface.1.Stats.TransmitOpticalLevel') ||
+                       get('Device.Optical.Interface.1.TransmitOpticalLevel') || null;
 
   // Smart detection for SSID (Wi-Fi Name)
   const ssid = get('Device.WiFi.SSID.1.SSID') || 
                get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') || 
+               get('Device.WiFi.SSID.2.SSID') || 
+               get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
                get('Device.DeviceInfo.ModelName') || 'N/A';
 
   // Smart detection for Uptime
   const uptime = get('Device.DeviceInfo.UpTime') || 
-                 get('InternetGatewayDevice.DeviceInfo.UpTime') || 0;
+                 get('InternetGatewayDevice.DeviceInfo.UpTime') || 
+                 get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
 
   return {
     device_id: genieDevice._id,
     serial_number: serialNumber,
-    name: ssid, // Using SSID as the device name
+    name: ssid, 
     vendor: vendor,
     model: model,
     firmware: get('Device.DeviceInfo.SoftwareVersion') || get('InternetGatewayDevice.DeviceInfo.SoftwareVersion') || 'N/A',
     ip_address: ipAddress,
-    rx_power: rxPower,
-    tx_power: txPower,
+    rx_power: rxPowerValue,
+    tx_power: txPowerValue,
     uptime: parseInt(uptime) || 0,
   };
 }
