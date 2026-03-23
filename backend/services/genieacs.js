@@ -137,18 +137,51 @@ function normalizeDevice(genieDevice) {
       if (!obj || !obj[part]) return null;
       obj = obj[part];
     }
-    return obj?._value ?? obj;
+    // Return _value if exists, otherwise the text representation if available
+    if (obj && typeof obj === 'object') {
+      return obj._value !== undefined ? obj._value : (obj.toString() === '[object Object]' ? null : obj);
+    }
+    return obj;
   };
+
+  // Smart detection for Serial Number (supports TR-069 and vendor-specific)
+  const serialNumber = get('Device.DeviceInfo.SerialNumber') || 
+                       get('InternetGatewayDevice.DeviceInfo.SerialNumber') || 
+                       get('DeviceID.ID') || 
+                       genieDevice._id || 'N/A';
+
+  // Smart detection for Vendor/Manufacturer
+  const vendor = get('Device.DeviceInfo.Manufacturer') || 
+                 get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
+                 get('Device.DeviceInfo.ManufacturerOUI') || 'Unknown';
+
+  // Smart detection for Model
+  const model = get('Device.DeviceInfo.ModelName') || 
+                get('InternetGatewayDevice.DeviceInfo.ModelName') || 
+                get('Device.DeviceInfo.Description') || 'Unknown';
+
+  // Smart detection for IP Address
+  const ipAddress = get('Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') ||
+                    get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') ||
+                    get('Device.ManagementServer.ConnectionRequestURL')?.split('://')[1]?.split(':')[0] || null;
+
+  // Multi-vendor RX/TX Power Detection (Huawei, ZTE, Fiberhome, etc.)
+  const rxPower = get('VirtualParameters.RXPower') || 
+                  get('Device.Optical.Interface.1.Stats.OpticalSignalLevel') ||
+                  get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel') || null;
+
+  const txPower = get('VirtualParameters.TXPower') || 
+                  get('Device.Optical.Interface.1.Stats.TransmitOpticalLevel') || null;
 
   return {
     device_id: genieDevice._id,
-    serial_number: get('Device.DeviceInfo.SerialNumber') || get('InternetGatewayDevice.DeviceInfo.SerialNumber') || 'N/A',
-    vendor: get('Device.DeviceInfo.Manufacturer') || get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 'Unknown',
-    model: get('Device.DeviceInfo.ModelName') || get('InternetGatewayDevice.DeviceInfo.ModelName') || 'Unknown',
+    serial_number: serialNumber,
+    vendor: vendor,
+    model: model,
     firmware: get('Device.DeviceInfo.SoftwareVersion') || get('InternetGatewayDevice.DeviceInfo.SoftwareVersion') || 'N/A',
-    ip_address: get('Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') || null,
-    rx_power: get('VirtualParameters.RXPower') || null,
-    tx_power: get('VirtualParameters.TXPower') || null,
+    ip_address: ipAddress,
+    rx_power: rxPower,
+    tx_power: txPower,
   };
 }
 
