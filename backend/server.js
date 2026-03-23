@@ -152,20 +152,20 @@ async function pollGenieACS() {
       if (existing) {
         db.prepare(`
           UPDATE devices 
-          SET status = ?, ip_address = ?, rx_power = ?, tx_power = ?, last_seen = ?
+          SET status = ?, name = ?, vendor = ?, model = ?, ip_address = ?, rx_power = ?, tx_power = ?, uptime = ?, last_seen = ?
           WHERE id = ?
-        `).run(status, normalized.ip_address, normalized.rx_power, normalized.tx_power, lastSeen, existing.id);
+        `).run(status, normalized.name, normalized.vendor, normalized.model, normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, lastSeen, existing.id);
         
         if (existing.status !== status) {
           statusChanges.push({ id: existing.id, status });
         }
       } else {
         const result = db.prepare(`
-          INSERT INTO devices (serial_number, vendor, model, firmware, ip_address, rx_power, tx_power, status, last_seen)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          normalized.serial_number, normalized.vendor, normalized.model, normalized.firmware,
-          normalized.ip_address, normalized.rx_power, normalized.tx_power, status, lastSeen
+          normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
+          normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, status, lastSeen
         );
         statusChanges.push({ id: result.lastInsertRowid, status });
       }

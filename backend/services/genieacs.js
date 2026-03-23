@@ -173,15 +173,26 @@ function normalizeDevice(genieDevice) {
   const txPower = get('VirtualParameters.TXPower') || 
                   get('Device.Optical.Interface.1.Stats.TransmitOpticalLevel') || null;
 
+  // Smart detection for SSID (Wi-Fi Name)
+  const ssid = get('Device.WiFi.SSID.1.SSID') || 
+               get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') || 
+               get('Device.DeviceInfo.ModelName') || 'N/A';
+
+  // Smart detection for Uptime
+  const uptime = get('Device.DeviceInfo.UpTime') || 
+                 get('InternetGatewayDevice.DeviceInfo.UpTime') || 0;
+
   return {
     device_id: genieDevice._id,
     serial_number: serialNumber,
+    name: ssid, // Using SSID as the device name
     vendor: vendor,
     model: model,
     firmware: get('Device.DeviceInfo.SoftwareVersion') || get('InternetGatewayDevice.DeviceInfo.SoftwareVersion') || 'N/A',
     ip_address: ipAddress,
     rx_power: rxPower,
     tx_power: txPower,
+    uptime: parseInt(uptime) || 0,
   };
 }
 
