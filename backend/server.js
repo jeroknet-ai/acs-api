@@ -31,6 +31,14 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // API Routes
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'admin' && password === 'JNetwork') {
+    return res.json({ success: true, token: 'fake-jwt-token-for-jnetwork' });
+  }
+  res.status(401).json({ success: false, message: 'Username atau password salah' });
+});
+
 app.use('/api/devices', devicesRouter);
 app.use('/api/network', networkRouter);
 app.use('/api/settings', settingsRouter);

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Monitor, Map, Settings, Wifi, Activity } from 'lucide-react';
+import { LayoutDashboard, Monitor, Map, Settings, Wifi, Activity, Power } from 'lucide-react';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -8,7 +8,7 @@ const navItems = [
   { path: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-export default function Sidebar({ connected, appName }) {
+export default function Sidebar({ connected, appName, onLogout }) {
   const location = useLocation();
   const displayName = appName || 'JNetwork';
 
@@ -16,8 +16,7 @@ export default function Sidebar({ connected, appName }) {
     <aside className="sidebar">
       <div className="sidebar-brand">
         <div className="brand-wrapper">
-          <span className="brand-letter">{displayName.charAt(0)}</span>
-          <span className="brand-rest">{displayName.slice(1)}</span>
+          <span className="brand-label">{displayName}</span>
         </div>
       </div>
 
@@ -80,27 +79,19 @@ export default function Sidebar({ connected, appName }) {
           width: 100%;
           margin-left: 0;
         }
-        .brand-letter {
-          font-size: 2.3rem; 
-          font-weight: 900;
-          color: white;
-          letter-spacing: 0;
-          line-height: 1;
-          transition: font-size 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .brand-rest {
+        .brand-label {
           font-size: 1.65rem;
           font-weight: 800;
           color: white;
-          letter-spacing: 0;
+          letter-spacing: -0.01em;
           opacity: 0;
-          max-width: 0; /* Mencegah tulisan yg transparan mendorong 'J' keluar layar */
-          overflow: hidden;
-          transition: all 0.35s ease;
+          transition: opacity 0.3s ease;
         }
         
-        .sidebar:hover .brand-letter { font-size: 1.65rem; }
-        .sidebar:hover .brand-rest { opacity: 1; max-width: 150px; }
+        .sidebar:hover .brand-wrapper {
+          width: 100%;
+        }
+        .sidebar:hover .brand-label { opacity: 1; }
 
         .sidebar-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
 
@@ -114,6 +105,9 @@ export default function Sidebar({ connected, appName }) {
         .nav-item svg { min-width: 17px; flex-shrink: 0; }
         .nav-item:hover { background: var(--bg-sidebar-hover); color: white; }
         .nav-item.active { background: var(--bg-sidebar-active); color: var(--text-sidebar-active); }
+
+        .logout-item { margin-top: 10px; color: rgba(255,255,255,0.5); }
+        .logout-item:hover { background: rgba(239, 68, 68, 0.1) !important; color: #f87171 !important; }
 
         .nav-label {
           opacity: 0;

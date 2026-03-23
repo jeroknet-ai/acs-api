@@ -1,0 +1,15 @@
+{
+  "name": "msnetwork-unified",
+  "version": "1.0.0",
+  "description": "Unified OLT/ONT Management System",
+  "scripts": {
+    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm run dev",
+    "build": "npm run build --prefix frontend"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
