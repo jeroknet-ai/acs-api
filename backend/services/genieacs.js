@@ -28,14 +28,31 @@ async function fetchDevices(query = {}) {
   try {
     const projection = [
       'DeviceID',
-      'Device.DeviceInfo.SerialNumber',
-      'Device.DeviceInfo.Manufacturer',
-      'Device.DeviceInfo.ModelName',
-      'Device.DeviceInfo.SoftwareVersion',
+      '_id',
+      // Serial & Basic Info
+      'Device.DeviceInfo.SerialNumber', 'InternetGatewayDevice.DeviceInfo.SerialNumber',
+      'Device.DeviceInfo.Manufacturer', 'InternetGatewayDevice.DeviceInfo.Manufacturer',
+      'Device.DeviceInfo.ManufacturerOUI',
+      'Device.DeviceInfo.ModelName', 'InternetGatewayDevice.DeviceInfo.ModelName',
+      'Device.DeviceInfo.ModelNumber', 'Device.DeviceInfo.Description',
+      'Device.DeviceInfo.SoftwareVersion', 'InternetGatewayDevice.DeviceInfo.SoftwareVersion',
+      // Network & IP
       'Device.ManagementServer.ConnectionRequestURL',
       'Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
-      'VirtualParameters.RXPower',
-      'VirtualParameters.TXPower',
+      'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
+      'Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress',
+      'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress',
+      // Optical Power
+      'VirtualParameters.RXPower', 'VirtualParameters.TXPower',
+      'Device.Optical.Interface.1.Stats.OpticalSignalLevel', 'Device.Optical.Interface.1.OpticalSignalLevel',
+      'Device.Optical.Interface.1.Stats.TransmitOpticalLevel', 'Device.Optical.Interface.1.TransmitOpticalLevel',
+      'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel',
+      // WiFi / SSID
+      'Device.WiFi.SSID.1.SSID', 'Device.WiFi.SSID.2.SSID',
+      'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID', 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID',
+      // Uptime
+      'Device.DeviceInfo.UpTime', 'InternetGatewayDevice.DeviceInfo.UpTime',
+      'Device.DeviceInfo.ProcessStatus.Process.1.CPUTime',
       'Tags',
     ].join(',');
 
