@@ -131,8 +131,8 @@ function simulateStatusUpdates() {
   }
 }
 
-// Start polling
-setInterval(simulateStatusUpdates, POLL_INTERVAL);
+// Start polling (DISABLED Simulation to allow live GenieACS data)
+// setInterval(simulateStatusUpdates, POLL_INTERVAL);
 
 // ==========================================
 // Serve Static Frontend (Single Container / Docker Mode)
