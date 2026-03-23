@@ -131,8 +131,66 @@ function simulateStatusUpdates() {
   }
 }
 
-// Start polling (DISABLED Simulation to allow live GenieACS data)
-// setInterval(simulateStatusUpdates, POLL_INTERVAL);
+/**
+ * Poll real devices from GenieACS
+ */
+async function pollGenieACS() {
+  try {
+    const rawDevices = await genieacs.fetchDevices();
+    const statusChanges = [];
+
+    for (const raw of rawDevices) {
+      const normalized = genieacs.normalizeDevice(raw);
+      if (!normalized) continue;
+
+      // Update or insert into database
+      const existing = db.prepare('SELECT id, status FROM devices WHERE serial_number = ?').get(normalized.serial_number);
+      
+      const lastSeen = new Date().toISOString();
+      const status = 'online'; // If it's in the list from GenieACS, it's generally considered online
+
+      if (existing) {
+        db.prepare(`
+          UPDATE devices 
+          SET status = ?, ip_address = ?, rx_power = ?, tx_power = ?, last_seen = ?
+          WHERE id = ?
+        `).run(status, normalized.ip_address, normalized.rx_power, normalized.tx_power, lastSeen, existing.id);
+        
+        if (existing.status !== status) {
+          statusChanges.push({ id: existing.id, status });
+        }
+      } else {
+        const result = db.prepare(`
+          INSERT INTO devices (serial_number, vendor, model, firmware, ip_address, rx_power, tx_power, status, last_seen)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          normalized.serial_number, normalized.vendor, normalized.model, normalized.firmware,
+          normalized.ip_address, normalized.rx_power, normalized.tx_power, status, lastSeen
+        );
+        statusChanges.push({ id: result.lastInsertRowid, status });
+      }
+    }
+
+    // Broadcast updates
+    const stats = {
+      total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
+      online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
+      offline: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'offline'").get().count,
+      warning: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'warning'").get().count,
+    };
+    io.emit('stats:update', stats);
+    if (statusChanges.length > 0) {
+      io.emit('devices:statusChange', statusChanges);
+    }
+  } catch (error) {
+    console.error('❌ GenieACS Polling Error:', error.message);
+  }
+}
+
+// Start polling REAL data every POLL_INTERVAL (30s)
+setInterval(pollGenieACS, POLL_INTERVAL);
+// Also run once immediately
+pollGenieACS();
 
 // ==========================================
 // Serve Static Frontend (Single Container / Docker Mode)
