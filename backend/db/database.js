@@ -16,6 +16,11 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
+  -- CLEAN UP: Hapus data contoh setiap kali aplikasi startup
+  DELETE FROM devices;
+  DELETE FROM olt;
+  DELETE FROM vendors;
+
   CREATE TABLE IF NOT EXISTS odc (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
