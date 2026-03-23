@@ -204,11 +204,11 @@ function normalizeDevice(genieDevice) {
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
              get('Device.DeviceInfo.ModelName') || 'N/A';
 
-  // Cleaning SSID: Remove _2.4G, _2.4GHz, _5G, _5GHz, etc.
+  // Cleaning SSID: Remove _2.4G, _2.4GHz, _5G, _5GHz, and any anything following them
   if (typeof ssid === 'string') {
-    // This will clean names like "NamaCustomer_2.4G", "NamaCustomer_2.4GHz", "NamaCustomer_5G"
-    ssid = ssid.replace(/(_2\.4G|_2\.4GHz|_5G|_5GHz|_2G)$/i, '')
-               .replace(/(\s?-?\s?2\.4G|\s?-?\s?5G)$/i, '') // Handle matches with spaces/hyphens
+    // Aggressive clean: matches _2.4G, _5G, -2.4G, etc. plus any trailing characters
+    ssid = ssid.replace(/(_2\.4G|_5G|_2\.4GHz|_5GHz|_2G)(.*)$/i, '') 
+               .replace(/(\s?-?\s?2\.4G|\s?-?\s?5G)(.*)$/i, '')
                .trim();
   }
 
