@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  jnetwork:
+    build: .
+    container_name: jnetwork-app
+    restart: always
+    ports:
+      # Map STB's external port 1987 to internal port 3001
+      - "1987:3001"
+    environment:
+      - PORT=3001
+      - POLL_INTERVAL=30
+      # You can modify the ACS IP here
+      - GENIEACS_URL=${GENIEACS_URL:-http://192.168.1.100:7557}
+    volumes:
+      # Mount the database to the host to ensure config data is saved permanently across container restarts
+      - ./data:/app/backend/db/data
