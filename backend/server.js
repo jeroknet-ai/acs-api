@@ -136,6 +136,9 @@ function simulateStatusUpdates() {
  */
 async function pollGenieACS() {
   try {
+    // FORCE CLEAR: Hapus semua data lama sebelum mengambil data baru dari GenieACS
+    db.prepare('DELETE FROM devices').run();
+
     const rawDevices = await genieacs.fetchDevices();
     const statusChanges = [];
 
