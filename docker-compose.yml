@@ -11,8 +11,10 @@ services:
     environment:
       - PORT=1987
       - POLL_INTERVAL=30
-      # You can modify the ACS IP here
-      - GENIEACS_URL=${GENIEACS_URL:-http://192.168.1.100:7557}
+      # OTOMATIS: Mencari GenieACS di IP STB Bapak sendiri (Port 7557)
+      - GENIEACS_URL=http://host.docker.internal:7557
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      # Mount the database to the host to ensure config data is saved permanently across container restarts
+      # Data Bapak akan tetap aman meskipun STB mati/restart
       - ./data:/app/backend/db/data
