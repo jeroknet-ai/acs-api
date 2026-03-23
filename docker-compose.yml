@@ -5,18 +5,15 @@ services:
     build: .
     container_name: jnetwork-app
     restart: always
-    ports:
-      # Map STB's external port 1987 to internal port 1987
-      - "1987:1987"
+    # MODE HOST: Agar bisa akses GenieACS (7557) di localhost STB secara langsung
+    network_mode: host
     environment:
       - PORT=1987
       - POLL_INTERVAL=30
-      # OTOMATIS: Langsung sedot data dari port 7557 tanpa syarat
-      - GENIEACS_URL=http://host.docker.internal:7557
+      # Karena pakai mode host, alamatnya cukup http://localhost:7557
+      - GENIEACS_URL=http://localhost:7557
       - GENIEACS_USER=
       - GENIEACS_PASS=
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       # Data Bapak akan tetap aman meskipun STB mati/restart
       - ./data:/app/backend/db/data
