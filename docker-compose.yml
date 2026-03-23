@@ -11,8 +11,10 @@ services:
     environment:
       - PORT=1987
       - POLL_INTERVAL=30
-      # OTOMATIS: Mencari GenieACS di IP STB Bapak sendiri (Port 7557)
+      # OTOMATIS: Langsung sedot data dari port 7557 tanpa syarat
       - GENIEACS_URL=http://host.docker.internal:7557
+      - GENIEACS_USER=
+      - GENIEACS_PASS=
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
