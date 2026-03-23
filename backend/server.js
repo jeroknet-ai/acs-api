@@ -87,49 +87,8 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// Periodic Status Simulation
-// (In production, this would poll GenieACS)
+// GenieACS Live Polling
 // ==========================================
-function simulateStatusUpdates() {
-  // Randomly change some device statuses to simulate real-time changes
-  const devices = db.prepare('SELECT id, status FROM devices').all();
-  const statusChanges = [];
-
-  for (const device of devices) {
-    const roll = Math.random();
-    let newStatus = device.status;
-
-    if (roll < 0.02) {
-      // 2% chance of status change
-      if (device.status === 'online') {
-        newStatus = Math.random() > 0.5 ? 'offline' : 'warning';
-      } else {
-        newStatus = 'online';
-      }
-
-      db.prepare('UPDATE devices SET status = ?, last_seen = ? WHERE id = ?').run(
-        newStatus,
-        newStatus === 'online' ? new Date().toISOString() : null,
-        device.id
-      );
-
-      statusChanges.push({ id: device.id, status: newStatus });
-    }
-  }
-
-  if (statusChanges.length > 0) {
-    // Broadcast to all connected clients
-    const stats = {
-      total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
-      online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
-      offline: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'offline'").get().count,
-      warning: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'warning'").get().count,
-    };
-
-    io.emit('stats:update', stats);
-    io.emit('devices:statusChange', statusChanges);
-  }
-}
 
 /**
  * Poll real devices from GenieACS
