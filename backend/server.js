@@ -137,13 +137,21 @@ setInterval(simulateStatusUpdates, POLL_INTERVAL);
 // ==========================================
 // Serve Static Frontend (Single Container / Docker Mode)
 // ==========================================
-const distPath = path.join(__dirname, '../frontend/dist');
+// Try multiple paths to find the built frontend (Docker vs Local)
+let distPath = path.join(__dirname, '../frontend/dist');
+if (!fs.existsSync(distPath)) {
+  distPath = path.join(__dirname, 'frontend/dist');
+}
+
 if (fs.existsSync(distPath)) {
+  console.log(`📦 Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
   // Catch-all for React Router
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
+} else {
+  console.log('⚠️ Warning: Frontend dist folder not found.');
 }
 
 // ==========================================
