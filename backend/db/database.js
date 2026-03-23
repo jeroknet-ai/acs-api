@@ -174,27 +174,11 @@ if (settingsCount === 0) {
   seedSettings.run('rx_power_critical', '-28');
 }
 
-// Seed default vendors
-const vendorCount = db.prepare("SELECT COUNT(*) as c FROM vendors").get().c;
-if (vendorCount === 0) {
-  const seedVendor = db.prepare("INSERT INTO vendors (name, description, wifi_security, encryption, auth_mode) VALUES (?, ?, ?, ?, ?)");
-  seedVendor.run('Huawei', 'Huawei ONT Devices', 'WPA2-PSK', 'AES', 'WPA2PSK');
-  seedVendor.run('ZTE', 'ZTE ONT Devices', 'WPA2-PSK', 'AES', 'WPA2PSK');
-  seedVendor.run('Fiberhome', 'Fiberhome ONT Devices', 'WPA/WPA2-PSK', 'TKIP/AES', 'WPAPSKWPA2PSK');
-}
-
-// Seed default admin user
+// Seed Essential Admin User ONLY
 const userCount = db.prepare("SELECT COUNT(*) as c FROM users").get().c;
 if (userCount === 0) {
-  db.prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)").run('admin', 'admin123', 'Administrator', 'admin');
-  db.prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)").run('operator', 'operator123', 'Operator User', 'operator');
-  db.prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)").run('viewer', 'viewer123', 'Viewer User', 'viewer');
-}
-
-// Seed default OLT
-const oltCount = db.prepare("SELECT COUNT(*) as c FROM olt").get().c;
-if (oltCount === 0) {
-  db.prepare("INSERT INTO olt (name, lat, lng, ip_address, vendor, model, ports, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run('OLT-JAKARTA-01', -6.2050, 106.8430, '10.10.10.1', 'Huawei', 'MA5608T', 16, 'active');
+  db.prepare("INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)")
+    .run('admin', 'JNetwork', 'Administrator', 'admin');
 }
 
 module.exports = db;
