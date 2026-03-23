@@ -16,6 +16,11 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
+  -- NUKE: Hapus data lama agar parameter baru yang akurat bisa masuk bersih
+  DROP TABLE IF EXISTS devices;
+  DROP TABLE IF EXISTS olt;
+  DROP TABLE IF EXISTS vendors;
+
   CREATE TABLE IF NOT EXISTS odc (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
