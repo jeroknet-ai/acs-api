@@ -198,15 +198,21 @@ function normalizeDevice(genieDevice) {
                        get('Device.Optical.Interface.1.TransmitOpticalLevel') || null;
 
   // Smart detection for SSID (Wi-Fi Name)
-  const ssid = get('Device.WiFi.SSID.1.SSID') || 
-               get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') || 
-               get('Device.WiFi.SSID.2.SSID') || 
-               get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
-               get('Device.DeviceInfo.ModelName') || 'N/A';
+  let ssid = get('Device.WiFi.SSID.1.SSID') || 
+             get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') || 
+             get('Device.WiFi.SSID.2.SSID') || 
+             get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
+             get('Device.DeviceInfo.ModelName') || 'N/A';
+
+  // Cleaning SSID: Remove _2.4G, _5G suffixes to keep it clean
+  if (typeof ssid === 'string') {
+    ssid = ssid.replace(/(_2\.4G|_5G)$/i, '').trim();
+  }
 
   // Smart detection for Uptime
   const uptime = get('Device.DeviceInfo.UpTime') || 
                  get('InternetGatewayDevice.DeviceInfo.UpTime') || 
+                 get('Device.ManagementServer.UpTime') ||
                  get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
 
   return {
