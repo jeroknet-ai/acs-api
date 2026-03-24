@@ -138,6 +138,18 @@ router.get('/:id', (req, res) => {
 });
 
 /**
+ * GET /api/devices/debug/all - List ALL devices raw from GenieACS
+ */
+router.get('/debug/all', async (req, res) => {
+  try {
+    const raw = await genieacs.fetchDevices();
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/devices/:id/trace - Trace ALL raw parameters from GenieACS
  */
 router.get('/:id/trace', async (req, res) => {
@@ -166,18 +178,6 @@ router.get('/:id/trace', async (req, res) => {
     res.json(raw);
   } catch (err) {
     res.status(500).json({ error: 'TRACE_ROUTE_CRASH', message: err.message });
-  }
-});
-
-/**
- * GET /api/devices/debug/all - List ALL devices raw from GenieACS
- */
-router.get('/debug/all', async (req, res) => {
-  try {
-    const raw = await genieacs.fetchDevices();
-    res.json(raw);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
