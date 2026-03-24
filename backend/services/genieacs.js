@@ -168,16 +168,22 @@ function normalizeDevice(genieDevice) {
                        genieDevice._id || 'N/A';
 
   // Smart detection for Vendor/Manufacturer
-  const vendor = get('Device.DeviceInfo.Manufacturer') || 
-                 get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
-                 get('Device.DeviceInfo.ManufacturerOUI') || 
-                 get('_Manufacturer') || 'Unknown';
+  let vendor = get('Device.DeviceInfo.Manufacturer') || 
+               get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
+               get('_Manufacturer') || 'Unknown';
+               
+  // Standardize Vendor naming
+  if (vendor.toLowerCase().includes('huawei')) vendor = 'Huawei';
+  if (vendor.toLowerCase().includes('zte')) vendor = 'ZTE';
+  if (vendor.toLowerCase().includes('fiberhome')) vendor = 'Fiberhome';
+  if (vendor.toLowerCase().includes('nokia')) vendor = 'Nokia';
 
   // Smart detection for Model
   const model = get('Device.DeviceInfo.ModelName') || 
                 get('InternetGatewayDevice.DeviceInfo.ModelName') || 
                 get('Device.DeviceInfo.ModelNumber') ||
                 get('Device.DeviceInfo.Description') || 
+                get('InternetGatewayDevice.DeviceInfo.Description') ||
                 get('_ModelName') || 'Unknown';
 
   // Smart detection for IP Address
