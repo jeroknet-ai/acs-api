@@ -2,13 +2,21 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 
-const rootElement = document.getElementById('root');
-if (rootElement) {
+try {
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    const statusElement = document.getElementById('boot-status');
+    if (statusElement) statusElement.innerText = 'MOUNTING...';
+    createRoot(rootElement).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+    if (statusElement) statusElement.innerText = 'MOUNTED';
+  }
+} catch (e) {
+  console.error('REACT RENDER CRASH:', e);
   const statusElement = document.getElementById('boot-status');
-  if (statusElement) statusElement.innerText = 'MOUNTED';
-  createRoot(rootElement).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
+  if (statusElement) statusElement.innerText = 'CRASHED: ' + e.message;
 }
+
