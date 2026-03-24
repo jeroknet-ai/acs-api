@@ -38,6 +38,7 @@ async function fetchDevices(query = {}) {
       'Device.DeviceInfo.SoftwareVersion', 'InternetGatewayDevice.DeviceInfo.SoftwareVersion',
       // Network & IP
       'Device.ManagementServer.ConnectionRequestURL',
+      'InternetGatewayDevice.ManagementServer.ConnectionRequestURL',
       'Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
       'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress',
       'Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress',
@@ -47,11 +48,17 @@ async function fetchDevices(query = {}) {
       'Device.Optical.Interface.1.Stats.OpticalSignalLevel', 'Device.Optical.Interface.1.OpticalSignalLevel',
       'Device.Optical.Interface.1.Stats.TransmitOpticalLevel', 'Device.Optical.Interface.1.TransmitOpticalLevel',
       'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel',
+      'InternetGatewayDevice.Optical.Interface.1.Stats.OpticalSignalLevel',
+      'Device.DeviceInfo.X_HUAWEI_OpticalSignalLevel',
+      'Device.DeviceInfo.X_HUAWEI_TransmitOpticalLevel',
       // WiFi / SSID
       'Device.WiFi.SSID.1.SSID', 'Device.WiFi.SSID.2.SSID',
+      'Device.WiFi.SSID.1.SSIDName',
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID', 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID',
+      'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.X_HUAWEI_SSIDName',
       // Uptime
       'Device.DeviceInfo.UpTime', 'InternetGatewayDevice.DeviceInfo.UpTime',
+      'Device.ManagementServer.UpTime',
       'Device.DeviceInfo.ProcessStatus.Process.1.CPUTime',
       'Tags',
     ].join(',');
@@ -201,30 +208,39 @@ function normalizeDevice(genieDevice) {
                     get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') ||
                     get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress') ||
                     get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.ExternalIPAddress') ||
-                    get('Device.ManagementServer.ConnectionRequestURL')?.split('://')[1]?.split(':')[0] || null;
+                    get('Device.ManagementServer.ConnectionRequestURL')?.split('://')[1]?.split(':')[0] || 
+                    get('InternetGatewayDevice.ManagementServer.ConnectionRequestURL')?.split('://')[1]?.split(':')[0] || null;
 
   // Multi-vendor RX/TX Power Detection (Huawei, ZTE, Fiberhome, etc.)
   const rxPowerValue = get('VirtualParameters.RXPower') || 
                        get('Device.Optical.Interface.1.Stats.OpticalSignalLevel') ||
                        get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel') ||
-                       get('Device.Optical.Interface.1.OpticalSignalLevel') || null;
+                       get('Device.Optical.Interface.1.OpticalSignalLevel') ||
+                       get('InternetGatewayDevice.Optical.Interface.1.Stats.OpticalSignalLevel') ||
+                       get('Device.DeviceInfo.X_HUAWEI_OpticalSignalLevel') || null;
 
   const txPowerValue = get('VirtualParameters.TXPower') || 
                        get('Device.Optical.Interface.1.Stats.TransmitOpticalLevel') ||
-                       get('Device.Optical.Interface.1.TransmitOpticalLevel') || null;
+                       get('Device.Optical.Interface.1.OpticalSignalLevel') ||
+                       get('InternetGatewayDevice.Optical.Interface.1.Stats.TransmitOpticalLevel') ||
+                       get('Device.DeviceInfo.X_HUAWEI_TransmitOpticalLevel') || null;
 
   // Smart detection for SSID (Wi-Fi Name)
   let ssid = get('Device.WiFi.SSID.1.SSID') || 
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') || 
+             get('Device.WiFi.SSID.1.SSIDName') ||
+             get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.X_HUAWEI_SSIDName') ||
              get('Device.WiFi.SSID.2.SSID') || 
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
              get('Device.DeviceInfo.ModelName') || 'N/A';
 
   // Super Aggressive SSID Cleaning: Remove any 2.4 / 5G / 2G etc plus whatever follows
-  if (typeof ssid === 'string') {
-    // This will catch _2.4G, -2.4G,  2.4G, _2G, _5G, _2.4GHz, etc., and remove the entire suffix
-    ssid = ssid.replace(/[_\-\s]*(2\.4G|5G|2\.4GHz|5GHz|2G|GHz).*$/i, '').trim();
+  if (typeof ssid === 'string' && ssid !== 'N/A') {
+    ssid = ssid.replace(/[_\-\s]*(2\.4G|5G|2\.4GHz|5GHz|2G|GHz|2\.4).*$/i, '').trim();
   }
+
+  // Final fallback if name is still generic
+  const finalName = (ssid === 'N/A' || !ssid) ? (model !== 'Unknown' ? model : serialNumber) : ssid;
 
   // Smart detection for Uptime
   const uptime = get('Device.DeviceInfo.UpTime') || 
@@ -235,7 +251,7 @@ function normalizeDevice(genieDevice) {
   return {
     device_id: genieDevice._id,
     serial_number: serialNumber,
-    name: ssid, 
+    name: finalName, 
     vendor: vendor,
     model: model,
     firmware: get('Device.DeviceInfo.SoftwareVersion') || get('InternetGatewayDevice.DeviceInfo.SoftwareVersion') || 'N/A',
