@@ -49,6 +49,18 @@ app.get('/api/debug/all', async (req, res) => {
   }
 });
 
+// ──── SUPER RAW BYPASS (Literal GenieACS Response) ────
+app.get('/api/debug/super-raw', async (req, res) => {
+  try {
+    const axios = require('axios');
+    const GENIEACS_URL = process.env.GENIEACS_API_URL || 'http://localhost:7557';
+    const response = await axios.get(`${GENIEACS_URL}/devices`);
+    res.json(response.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message, url: process.env.GENIEACS_API_URL });
+  }
+});
+
 app.get('/api/debug/trace/:id', async (req, res) => {
   try {
     const device = db.prepare('SELECT serial_number, device_id FROM devices WHERE id = ?').get(req.params.id);
