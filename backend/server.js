@@ -101,36 +101,25 @@ async function pollGenieACS() {
     const rawDevices = await genieacs.fetchDevices();
     const statusChanges = [];
 
+    // NUKE existing devices during this poll to ensure absolute accuracy of all parameters
+    db.prepare('DELETE FROM devices').run();
+
     for (const raw of rawDevices) {
       const normalized = genieacs.normalizeDevice(raw);
       if (!normalized) continue;
 
-      // Update or insert into database
-      const existing = db.prepare('SELECT id, status FROM devices WHERE serial_number = ?').get(normalized.serial_number);
-      
       const lastSeen = new Date().toISOString();
-      const status = 'online'; // If it's in the list from GenieACS, it's generally considered online
+      const status = 'online'; 
 
-      if (existing) {
-        db.prepare(`
-          UPDATE devices 
-          SET status = ?, name = ?, vendor = ?, model = ?, ip_address = ?, rx_power = ?, tx_power = ?, uptime = ?, last_seen = ?
-          WHERE id = ?
-        `).run(status, normalized.name, normalized.vendor, normalized.model, normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, lastSeen, existing.id);
-        
-        if (existing.status !== status) {
-          statusChanges.push({ id: existing.id, status });
-        }
-      } else {
-        const result = db.prepare(`
-          INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
-          normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, status, lastSeen
-        );
-        statusChanges.push({ id: result.lastInsertRowid, status });
-      }
+      const result = db.prepare(`
+        INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
+        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, status, lastSeen
+      );
+      
+      statusChanges.push({ id: result.lastInsertRowid, status });
     }
 
     // Broadcast updates
