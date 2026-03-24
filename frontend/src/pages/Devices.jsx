@@ -387,40 +387,70 @@ export default function Devices() {
 
       <div className="table-container">
         <div className="table-header">
-          <h3>ONT Devices ({devices?.length || 0})</h3>
-          <button className="btn btn-secondary btn-sm" onClick={() => { fetchDevices(); fetchAll(); }}>Refresh</button>
+          <h3>ONT Devices ({pagination?.total || devices?.length || 0})</h3>
+          <div className="table-actions">
+            <div className="search-input">
+              <Search size={14} />
+              <input placeholder="Cari serial, ssid..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <select className="filter-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+              <option value="">All Status</option><option value="online">Online</option><option value="offline">Offline</option><option value="warning">Warning</option>
+            </select>
+            <button className="btn btn-secondary btn-sm" onClick={() => { fetchDevices(); fetchAll(); }}><RefreshCw size={13} /> Refresh</button>
+          </div>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>SSID</th>
-              <th>Serial</th>
-              <th>Vendor</th>
-              <th>Status</th>
-              <th>RX Power</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.isArray(devices) && devices.length > 0 ? (
-              devices.map(d => (
-                <tr key={d?.id || Math.random()}>
-                  <td>{d?.ssid_name || d?.name || '-'}</td>
-                  <td>{d?.serial_number || '-'}</td>
-                  <td>{d?.vendor || '-'}</td>
-                  <td>{d?.status || 'offline'}</td>
-                  <td>{d?.rx_power || '-'} dBm</td>
-                  <td>
-                    <button className="btn-icon" onClick={() => setSelectedDevice(d)}>Detail</button>
-                  </td>
+        {loading ? <div className="loading-container"><div className="spinner" /></div> : (
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>SSID</th>
+                  <th>Serial</th>
+                  <th>PPPoE</th>
+                  <th>Vendor</th>
+                  <th>Status</th>
+                  <th>RX Power</th>
+                  <th>Actions</th>
                 </tr>
-              ))
-            ) : (
-              <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20 }}>No devices found</td></tr>
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {Array.isArray(devices) && devices.length > 0 ? (
+                  devices.map(d => (
+                    <tr key={d?.id || Math.random()}>
+                      <td style={{ fontWeight: 500, fontSize: '0.95rem' }}>
+                        <Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />
+                        {cleanName(d?.ssid_name || d?.name)}
+                      </td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{d?.serial_number || '-'}</td>
+                      <td style={{ color: 'var(--accent-blue)', fontSize: '0.85rem' }}>{d?.pppoe_username || '-'}</td>
+                      <td><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600, background: 'rgba(0,0,0,0.05)' }}>{d?.vendor || '-'}</span></td>
+                      <td><span className={`status-badge ${d?.status || 'offline'}`}><span className="dot" />{d?.status || 'offline'}</span></td>
+                      <td style={{ color: d?.rx_power && d?.rx_power < -25 ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'monospace' }}>{d?.rx_power ? `${d?.rx_power} dBm` : '-'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
+                          <button className="btn-icon" title="Summon" onClick={() => api.post(`/devices/${d?.id}/refresh`)}><RefreshCw size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20 }}>No devices found</td></tr>
+                )}
+              </tbody>
+            </table>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Showing {devices.length} of {pagination?.total || 0}</span>
+              <div style={{ display: 'flex', gap: 5 }}>
+                <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
+                <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}>{page}/{pagination?.totalPages || 1}</span>
+                <button className="btn btn-secondary btn-sm" disabled={page >= (pagination?.totalPages || 1)} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {selectedDevice && (
