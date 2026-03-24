@@ -178,6 +178,29 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 forcedInitialPoll();
 
 // ==========================================
+// Debug Helpers
+// ==========================================
+const logBuffer = [];
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = (...args) => {
+  logBuffer.push(`[LOG] ${new Date().toISOString()}: ${args.join(' ')}`);
+  if (logBuffer.length > 200) logBuffer.shift();
+  originalLog(...args);
+};
+
+console.error = (...args) => {
+  logBuffer.push(`[ERR] ${new Date().toISOString()}: ${args.join(' ')}`);
+  if (logBuffer.length > 200) logBuffer.shift();
+  originalError(...args);
+};
+
+app.get('/api/debug/logs', (req, res) => {
+  res.send(logBuffer.join('\n'));
+});
+
+// ==========================================
 // Serve Static Frontend (Fail-Proof)
 // ==========================================
 const distPath = path.join(__dirname, 'public');
