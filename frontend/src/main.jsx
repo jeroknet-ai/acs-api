@@ -12,7 +12,7 @@ try {
         <App />
       </StrictMode>,
     );
-    if (statusElement) statusElement.innerText = 'MOUNTED';
+    // Status update removed to clear UI
   }
 } catch (e) {
   console.error('REACT RENDER CRASH:', e);
