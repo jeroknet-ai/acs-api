@@ -265,8 +265,11 @@ function normalizeDevice(genieDevice) {
   // Final fallback if name is still generic
   const finalName = (ssid === 'N/A' || !ssid) ? (model !== 'Unknown' ? model : serialNumber) : ssid;
 
-                  get('Device.ManagementServer.UpTime') ||
-                  get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
+  // Smart detection for Uptime
+  const uptime = get('Device.DeviceInfo.UpTime') || 
+                 get('InternetGatewayDevice.DeviceInfo.UpTime') || 
+                 get('Device.ManagementServer.UpTime') ||
+                 get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
 
   // LAN Device Count (Clients)
   const lanDeviceCount = (get('Device.Hosts.HostNumberOfEntries') || 
