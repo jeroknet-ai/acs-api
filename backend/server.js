@@ -139,12 +139,16 @@ async function pollGenieACS() {
       const normalized = genieacs.normalizeDevice(raw);
       if (!normalized) continue;
       
-      insertStmt.run(
-        normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
-        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id,
-        normalized.lan_count, normalized.pppoe_user, normalized.wan_tx, normalized.wan_rx
-      );
-      syncedCount++;
+      try {
+        insertStmt.run(
+          normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
+          normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id,
+          normalized.lan_count, normalized.pppoe_user, normalized.wan_tx, normalized.wan_rx
+        );
+        syncedCount++;
+      } catch (dbErr) {
+        console.error(`❌ DB Insert Error [${normalized.serial_number}]:`, dbErr.message);
+      }
     }
 
     const stats = {
