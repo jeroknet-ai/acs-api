@@ -185,7 +185,6 @@ app.get('/api/debug/db', (req, res) => {
 });
 
 // ──── Static Serving ────
-const distPath = path.join(__dirname, 'public');
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
