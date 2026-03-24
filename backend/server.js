@@ -147,24 +147,26 @@ pollGenieACS();
 // Serve Static Frontend (Single Container / Docker Mode)
 // ==========================================
 // Try multiple paths to find the built frontend (Docker vs Local)
-let distPath = path.join(__dirname, '../frontend/dist');
-if (!fs.existsSync(distPath)) {
-  distPath = path.join(__dirname, 'frontend/dist');
-}
-if (!fs.existsSync(distPath)) {
-  // Absolute fallback for Docker root structure
-  distPath = '/app/frontend/dist';
-}
+let distPaths = [
+  path.join(__dirname, '../frontend/dist'),
+  path.join(__dirname, 'frontend/dist'),
+  '/app/frontend/dist'
+];
 
-if (fs.existsSync(distPath)) {
-  console.log(`📦 Serving static files from: ${distPath}`);
+let distPath = distPaths.find(p => {
+  console.log(`🔍 Checking frontend path: ${p}`);
+  return fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'));
+});
+
+if (distPath) {
+  console.log(`✅ SUCCESS: Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
   // Catch-all for React Router
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
-  console.log('⚠️ Warning: Frontend dist folder not found.');
+  console.log('❌ ERROR: Frontend dist folder or index.html not found in any of:', distPaths);
 }
 
 // ==========================================
