@@ -351,9 +351,19 @@ export default function Devices() {
   }
 
   async function handleDelete(id) {
+    if (!window.confirm('Hapus perangkat dari database?')) return;
+    try {
+      await api.delete(`/devices/${id}`);
+      fetchDevices();
+      fetchAll();
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Gagal menghapus perangkat');
+    }
+  }
 
   // RX Power statistics
-  const rxValues = allDevices.filter(d => d.rx_power != null).map(d => d.rx_power);
+  const rxValues = (allDevices || []).filter(d => d && d.rx_power != null).map(d => d.rx_power);
   const rxGood = rxValues.filter(v => v >= -20).length;
   const rxFair = rxValues.filter(v => v < -20 && v >= -25).length;
   const rxWarn = rxValues.filter(v => v < -25 && v >= -28).length;
