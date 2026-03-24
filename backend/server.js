@@ -99,27 +99,34 @@ async function pollGenieACS() {
     db.prepare('DELETE FROM devices').run();
 
     const rawDevices = await genieacs.fetchDevices();
-    const statusChanges = [];
-
-    // NUKE existing devices during this poll to ensure absolute accuracy of all parameters
-    db.prepare('DELETE FROM devices').run();
+    const currentSerials = rawDevices.map(d => genieacs.normalizeDevice(d)?.serial_number).filter(Boolean);
 
     for (const raw of rawDevices) {
       const normalized = genieacs.normalizeDevice(raw);
       if (!normalized) continue;
 
       const lastSeen = new Date().toISOString();
-      const status = 'online'; 
+      const status = 'online';
 
-      const result = db.prepare(`
+      // UPSERT logic: update if exists, insert if new
+      db.prepare(`
         INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(serial_number) DO UPDATE SET
+          name=excluded.name, vendor=excluded.vendor, model=excluded.model, 
+          firmware=excluded.firmware, ip_address=excluded.ip_address, 
+          rx_power=excluded.rx_power, tx_power=excluded.tx_power, 
+          uptime=excluded.uptime, status=excluded.status, last_seen=excluded.last_seen
       `).run(
         normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
         normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, status, lastSeen
       );
-      
-      statusChanges.push({ id: result.lastInsertRowid, status });
+    }
+
+    // Remove devices that NO LONGER exist in GenieACS
+    if (currentSerials.length > 0) {
+      const placeholders = currentSerials.map(() => '?').join(',');
+      db.prepare(`DELETE FROM devices WHERE serial_number NOT IN (${placeholders})`).run(...currentSerials);
     }
 
     // Broadcast updates
@@ -130,9 +137,7 @@ async function pollGenieACS() {
       warning: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'warning'").get().count,
     };
     io.emit('stats:update', stats);
-    if (statusChanges.length > 0) {
-      io.emit('devices:statusChange', statusChanges);
-    }
+    io.emit('polling:success', { count: rawDevices.length });
   } catch (error) {
     console.error('❌ GenieACS Polling Error:', error.message);
   }
