@@ -15,10 +15,9 @@ RUN npm install --omit=dev
 COPY backend/ ./
 
 # 4. Copy PRE-BUILT Frontend ASSETS (Zip for absolute sync)
-# Terkadang COPY folder di ARM bermasalah, jadi kita pakai ZIP agar pasti
 RUN apk add --no-cache unzip
-COPY frontend/dist.zip /app/dist.zip
-RUN unzip /app/dist.zip -d /public && rm /app/dist.zip
+COPY frontend/dist.zip /dist.zip
+RUN ls -lh /dist.zip && unzip /dist.zip -d /public && rm /dist.zip
 
 # 5. Start
 ENV PORT=1987
