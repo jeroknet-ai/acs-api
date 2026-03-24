@@ -265,11 +265,22 @@ function normalizeDevice(genieDevice) {
   // Final fallback if name is still generic
   const finalName = (ssid === 'N/A' || !ssid) ? (model !== 'Unknown' ? model : serialNumber) : ssid;
 
-  // Smart detection for Uptime
-  const uptime = get('Device.DeviceInfo.UpTime') || 
-                 get('InternetGatewayDevice.DeviceInfo.UpTime') || 
-                 get('Device.ManagementServer.UpTime') ||
-                 get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
+                  get('Device.ManagementServer.UpTime') ||
+                  get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
+
+  // LAN Device Count (Clients)
+  const lanDeviceCount = (get('Device.Hosts.HostNumberOfEntries') || 
+                          get('InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries') || 0);
+
+  // PPPoE User (Username) - Used for 'User' count
+  const pppoeUser = get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username') ||
+                    get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username') || null;
+
+  // WAN Traffic (Bytes Sent/Received)
+  const txBytes = get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Stats.EthernetBytesSent') ||
+                  get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Stats.EthernetBytesSent') || 0;
+  const rxBytes = get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Stats.EthernetBytesReceived') ||
+                  get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Stats.EthernetBytesReceived') || 0;
 
   return {
     device_id: genieDevice._id,
@@ -282,6 +293,10 @@ function normalizeDevice(genieDevice) {
     rx_power: rxPowerValue,
     tx_power: txPowerValue,
     uptime: parseInt(uptime) || 0,
+    lan_count: parseInt(lanDeviceCount) || 0,
+    pppoe_user: pppoeUser,
+    wan_tx: parseInt(txBytes) || 0,
+    wan_rx: parseInt(rxBytes) || 0
   };
 }
 

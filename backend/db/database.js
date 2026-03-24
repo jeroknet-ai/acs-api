@@ -158,6 +158,12 @@ try { db.exec('ALTER TABLE devices ADD COLUMN device_id TEXT'); } catch (e) {}
 try { db.exec('ALTER TABLE devices ADD COLUMN wan_config TEXT'); } catch (e) {}
 try { db.exec("ALTER TABLE cables ADD COLUMN waypoints TEXT DEFAULT '[]'"); } catch (e) {}
 
+// New Stat Columns
+try { db.exec('ALTER TABLE devices ADD COLUMN lan_count INTEGER DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE devices ADD COLUMN pppoe_user TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE devices ADD COLUMN wan_tx INTEGER DEFAULT 0'); } catch (e) {}
+try { db.exec('ALTER TABLE devices ADD COLUMN wan_rx INTEGER DEFAULT 0'); } catch (e) {}
+
 // Create device_configs table for persisting WAN/SSID/User configs
 db.exec(`
   CREATE TABLE IF NOT EXISTS device_configs (
