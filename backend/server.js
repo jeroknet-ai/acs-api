@@ -144,28 +144,26 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 pollGenieACS();
 
 // ==========================================
-// Serve Static Frontend (Final Resilience)
+// Serve Static Frontend (Fail-Proof)
 // ==========================================
-const distPath = path.join(__dirname, 'public');
+// Check ROOT /public first (Docker definitive path)
+let distPath = '/public'; 
+
+if (!fs.existsSync(path.join(distPath, 'index.html'))) {
+  // Fallback to local paths
+  distPath = path.join(__dirname, 'public'); 
+  if (!fs.existsSync(path.join(distPath, 'index.html'))) {
+    distPath = path.join(__dirname, '../frontend/dist');
+  }
+}
 
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   const assetsExist = fs.existsSync(path.join(distPath, 'assets'));
-  console.log(`✅ PROD: Serving assets from: ${distPath} (Assets folder: ${assetsExist ? 'Found' : 'MISSING!'})`);
+  console.log(`✅ STATIC: Serving from ${distPath} (Assets: ${assetsExist ? 'Yes' : 'NO!'})`);
   app.use(express.static(distPath));
-  // Catch-all for SPA routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
+  app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
 } else {
-  // Local development fallback
-  const localDist = path.join(__dirname, '../frontend/dist');
-  console.log(`ℹ️ Checking local dist: ${localDist}`);
-  if (fs.existsSync(localDist)) {
-    app.use(express.static(localDist));
-    app.get('*', (req, res) => res.sendFile(path.join(localDist, 'index.html')));
-  } else {
-    console.log('❌ CRITICAL: No static assets found!');
-  }
+  console.log('❌ CRITICAL: No frontend found in /public or local folders!');
 }
 
 // ==========================================

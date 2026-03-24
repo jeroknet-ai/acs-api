@@ -14,10 +14,10 @@ RUN npm install --omit=dev
 # 3. Copy Backend code
 COPY backend/ ./
 
-# 4. Copy PRE-BUILT Frontend to the local 'public' folder
-# This ensures path.join(__dirname, 'public') always works
-RUN mkdir -p /app/public
-COPY frontend/dist/ /app/public/
+# 4. Copy PRE-BUILT Frontend to the root 'public' folder
+# This is the most DEFINTIVE way to ensure path consistency
+RUN mkdir -p /public
+COPY frontend/dist /public/
 
 # 5. Start
 ENV PORT=1987
