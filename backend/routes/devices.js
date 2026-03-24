@@ -31,8 +31,6 @@ router.get('/', (req, res) => {
       query += ' WHERE ' + conditions.join(' AND ');
     }
 
-
-
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const countQuery = query.replace('SELECT d.*, o.name as odp_name', 'SELECT COUNT(DISTINCT d.id) as total');
     const total = db.prepare(countQuery).get(...params)?.total || 0;
@@ -46,7 +44,7 @@ router.get('/', (req, res) => {
     const getConfig = db.prepare('SELECT config_data FROM device_configs WHERE device_id = ? AND config_type = ?');
     const enriched = devices.map(d => {
       const row = getConfig.get(d.id, 'ssid');
-      let ssid_name = d.name + '_2.4G';
+      let ssid_name = d.name;
       if (row) {
         try {
           const ssids = JSON.parse(row.config_data);
@@ -91,16 +89,15 @@ router.get('/stats', (req, res) => {
       'SELECT a.*, d.name as device_name, d.serial_number FROM alerts a LEFT JOIN devices d ON a.device_id = d.id ORDER BY a.created_at DESC LIMIT 10'
     ).all();
 
-    // Hourly online/offline trend (simulated from current data)
+    // Hourly online/offline trend
     const hourlyTrend = [];
     for (let i = 23; i >= 0; i--) {
       const hour = new Date();
       hour.setHours(hour.getHours() - i);
-      const onlineVariation = Math.floor(Math.random() * 5);
       hourlyTrend.push({
         hour: hour.toISOString().slice(0, 13) + ':00',
-        online: stats.online + (Math.random() > 0.5 ? onlineVariation : -onlineVariation),
-        offline: stats.offline + (Math.random() > 0.5 ? 1 : -1),
+        online: stats.online,
+        offline: stats.offline,
       });
     }
 
@@ -146,19 +143,31 @@ router.get('/:id', (req, res) => {
 router.get('/:id/trace', async (req, res) => {
   try {
     const device = db.prepare('SELECT serial_number, device_id FROM devices WHERE id = ?').get(req.params.id);
-    if (!device) return res.status(404).json({ error: 'Device not found' });
+    if (!device) return res.status(404).json({ error: 'Device not found in SQLite', id: req.params.id });
     
-    // Try BOTH device_id and serial_number
-    console.log(`🔍 Tracing Device ID: ${device.device_id} or Serial: ${device.serial_number}`);
+    // Attempt 1: Using the provided ID
     let raw = await genieacs.fetchDevice(device.device_id);
     
-    if (!raw || raw.error) {
+    // Attempt 2: Using the Serial Number
+    if (!raw || raw.error || (Array.isArray(raw) && raw.length === 0)) {
        raw = await genieacs.fetchDevice(device.serial_number);
     }
 
-    res.json(raw || { error: 'GenieACS returned nothing for this device', device });
+    // FINAL FALLBACK: Health check the API and list sample if failed
+    if (!raw || raw.error || (Array.isArray(raw) && raw.length === 0)) {
+       const health = await genieacs.healthCheck();
+       const sample = await genieacs.fetchDevices({ limit: 5 });
+       return res.json({ 
+         error: 'DEVICE_NOT_FOUND_IN_GENIEACS', 
+         health, 
+         db_record: device,
+         sample_available_device_ids: sample.map(d => d._id)
+       });
+    }
+
+    res.json(raw);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'TRACE_ROUTE_CRASH', message: err.message });
   }
 });
 
@@ -168,26 +177,10 @@ router.get('/:id/trace', async (req, res) => {
 router.post('/:id/reboot', async (req, res) => {
   try {
     const device = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.params.id);
-    if (!device) {
-      return res.status(404).json({ error: 'Device not found' });
-    }
-
-    // Try GenieACS reboot
-    try {
-      await genieacs.rebootDevice(device.serial_number);
-    } catch {
-      // GenieACS may not be available, log but continue
-      console.log('GenieACS reboot command could not be sent (demo mode)');
-    }
-
-    // Log alert
-    db.prepare(
-      "INSERT INTO alerts (device_id, type, message, severity) VALUES (?, 'reboot', 'Device reboot initiated', 'info')"
-    ).run(device.id);
-
+    if (!device) return res.status(404).json({ error: 'Device not found' });
+    await genieacs.rebootDevice(device.serial_number);
     res.json({ success: true, message: `Reboot command sent to ${device.name}` });
   } catch (error) {
-    console.error('Error rebooting device:', error);
     res.status(500).json({ error: 'Failed to reboot device' });
   }
 });
@@ -198,19 +191,10 @@ router.post('/:id/reboot', async (req, res) => {
 router.post('/:id/refresh', async (req, res) => {
   try {
     const device = db.prepare('SELECT * FROM devices WHERE id = ?').get(req.params.id);
-    if (!device) {
-      return res.status(404).json({ error: 'Device not found' });
-    }
-
-    try {
-      await genieacs.refreshDevice(device.serial_number);
-    } catch {
-      console.log('GenieACS refresh command could not be sent (demo mode)');
-    }
-
+    if (!device) return res.status(404).json({ error: 'Device not found' });
+    await genieacs.refreshDevice(device.serial_number);
     res.json({ success: true, message: `Refresh command sent to ${device.name}` });
   } catch (error) {
-    console.error('Error refreshing device:', error);
     res.status(500).json({ error: 'Failed to refresh device' });
   }
 });
@@ -227,13 +211,12 @@ router.delete('/:id', (req, res) => {
     })();
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting device:', error);
     res.status(500).json({ error: 'Failed to delete device' });
   }
 });
 
 /**
- * GET /api/devices/:id/config - Get device configs (wan/ssid/users)
+ * GET /api/devices/:id/config - Get device configs
  */
 router.get('/:id/config', (req, res) => {
   try {
@@ -244,25 +227,21 @@ router.get('/:id/config', (req, res) => {
     }
     res.json(result);
   } catch (error) {
-    console.error('Error getting device config:', error);
     res.status(500).json({ error: 'Failed to get config' });
   }
 });
 
 /**
- * POST /api/devices/:id/config - Save device config (WAN/SSID/Users)
+ * POST /api/devices/:id/config - Save device config
  */
 router.post('/:id/config', (req, res) => {
   try {
     const { type, data } = req.body;
     const deviceId = req.params.id;
-    // Delete then insert (safe upsert)
     db.prepare('DELETE FROM device_configs WHERE device_id = ? AND config_type = ?').run(deviceId, type);
     db.prepare('INSERT INTO device_configs (device_id, config_type, config_data, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)').run(deviceId, type, JSON.stringify(data));
-    console.log(`[Config] Saved ${type} config for device ${deviceId}`);
-    res.json({ success: true, message: `${type} config saved` });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Error saving device config:', error);
     res.status(500).json({ error: 'Failed to save config' });
   }
 });
