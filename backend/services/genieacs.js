@@ -60,10 +60,13 @@ async function fetchDevices(query = {}) {
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.X_HUAWEI_SSIDName',
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.3.SSID', // Fiberhome 5G
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.SSID', // Fiberhome 5G alt
-      // Uptime
-      'Device.DeviceInfo.UpTime', 'InternetGatewayDevice.DeviceInfo.UpTime',
-      'Device.ManagementServer.UpTime',
-      'Device.DeviceInfo.ProcessStatus.Process.1.CPUTime',
+      // LAN / Connected Devices
+      'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations',
+      'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WLAN_AssociatedDeviceNumberOfEntries',
+      'Device.Hosts.HostNumberOfEntries', 'InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries',
+      // WAN Specifics
+      'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_HW_VLANID',
+      'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANEthernetLinkConfig.X_HW_VLANID',
       'Tags',
     ].join(',');
 
@@ -272,8 +275,10 @@ function normalizeDevice(genieDevice) {
                  get('Device.DeviceInfo.ProcessStatus.Process.1.CPUTime') || 0;
 
   // LAN Device Count (Clients)
-  const lanDeviceCount = (get('Device.Hosts.HostNumberOfEntries') || 
-                          get('InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries') || 0);
+  const lanDeviceCount = get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations') || 
+                         get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WLAN_AssociatedDeviceNumberOfEntries') ||
+                         get('Device.Hosts.HostNumberOfEntries') || 
+                         get('InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries') || 0;
 
   // PPPoE User (Username) - Used for 'User' count
   const pppoeUser = get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username') ||
