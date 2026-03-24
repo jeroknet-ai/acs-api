@@ -101,17 +101,24 @@ export default function Dashboard({ socketStats }) {
         <div className="stat-card green">
           <div className="stat-icon"><Wifi size={22} /></div>
           <div className="stat-value">{liveOnline}</div>
-          <div className="stat-label">Online</div>
+          <div className="stat-label">Online Status</div>
         </div>
-        <div className="stat-card red">
-          <div className="stat-icon"><WifiOff size={22} /></div>
-          <div className="stat-value">{liveOffline}</div>
-          <div className="stat-label">Offline</div>
+        <div className="stat-card purple">
+          <div className="stat-icon"><Activity size={22} /></div>
+          <div className="stat-value">{(socketStats?.connected ?? 0)}</div>
+          <div className="stat-label">Connected / LAN</div>
         </div>
         <div className="stat-card orange">
-          <div className="stat-icon"><AlertTriangle size={22} /></div>
-          <div className="stat-value">{liveWarning}</div>
-          <div className="stat-label">Warning</div>
+          <div className="stat-icon"><TrendingUp size={22} /></div>
+          <div className="stat-value">
+            {socketStats?.wan_traffic ? (socketStats.wan_traffic / (1024 * 1024 * 1024)).toFixed(2) : "0.00"}
+          </div>
+          <div className="stat-label">WAN Usage (GB)</div>
+        </div>
+        <div className="stat-card red">
+          <div className="stat-icon"><AlertCircle size={22} /></div>
+          <div className="stat-value">{socketStats?.users ?? 0}</div>
+          <div className="stat-label">Total Users</div>
         </div>
       </div>
 

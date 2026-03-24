@@ -131,8 +131,8 @@ async function pollGenieACS() {
 
     let syncedCount = 0;
     const insertStmt = db.prepare(`
-      INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id, lan_count, pppoe_user, wan_tx, wan_rx)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const raw of rawDevices) {
@@ -141,7 +141,8 @@ async function pollGenieACS() {
       
       insertStmt.run(
         normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
-        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id
+        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id,
+        normalized.lan_count, normalized.pppoe_user, normalized.wan_tx, normalized.wan_rx
       );
       syncedCount++;
     }
@@ -151,6 +152,10 @@ async function pollGenieACS() {
       online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
       offline: 0,
       warning: 0,
+      // NEW: Aggregated Stats
+      connected: db.prepare("SELECT SUM(lan_count) as total FROM devices").get().total || 0,
+      users: db.prepare("SELECT COUNT(DISTINCT pppoe_user) as total FROM devices WHERE pppoe_user IS NOT NULL").get().total || 0,
+      wan_traffic: db.prepare("SELECT SUM(wan_tx + wan_rx) as total FROM devices").get().total || 0
     };
     io.emit('stats:update', stats);
     io.emit('polling:success', { count: syncedCount });
