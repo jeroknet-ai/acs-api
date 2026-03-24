@@ -145,29 +145,39 @@ router.get('/:id/trace', async (req, res) => {
     const device = db.prepare('SELECT serial_number, device_id FROM devices WHERE id = ?').get(req.params.id);
     if (!device) return res.status(404).json({ error: 'Device not found in SQLite', id: req.params.id });
     
-    // Attempt 1: Using the provided ID
-    let raw = await genieacs.fetchDevice(device.device_id);
+    console.log(`🔍 DEBUG TRACE: id=${req.params.id} serial=${device.serial_number} device_id=${device.device_id}`);
     
-    // Attempt 2: Using the Serial Number
-    if (!raw || raw.error || (Array.isArray(raw) && raw.length === 0)) {
-       raw = await genieacs.fetchDevice(device.serial_number);
-    }
-
+    // Attempt 1: Using the provided ID
+    let raw = await genieacs.fetchDevice(device.device_id || device.serial_number);
+    
     // FINAL FALLBACK: Health check the API and list sample if failed
     if (!raw || raw.error || (Array.isArray(raw) && raw.length === 0)) {
        const health = await genieacs.healthCheck();
-       const sample = await genieacs.fetchDevices({ limit: 5 });
+       const sample = await genieacs.fetchDevices({ limit: 10 });
        return res.json({ 
          error: 'DEVICE_NOT_FOUND_IN_GENIEACS', 
          health, 
          db_record: device,
-         sample_available_device_ids: sample.map(d => d._id)
+         tip: 'Try /api/devices/debug/all to see all devices in GenieACS',
+         sample_available_device_ids: sample.map(d => ({ id: d._id, sn: d.Device?.DeviceInfo?.SerialNumber?._value }))
        });
     }
 
     res.json(raw);
   } catch (err) {
     res.status(500).json({ error: 'TRACE_ROUTE_CRASH', message: err.message });
+  }
+});
+
+/**
+ * GET /api/devices/debug/all - List ALL devices raw from GenieACS
+ */
+router.get('/debug/all', async (req, res) => {
+  try {
+    const raw = await genieacs.fetchDevices();
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
