@@ -150,6 +150,7 @@ pollGenieACS();
 let distPaths = [
   path.join(__dirname, '../frontend/dist'),
   path.join(__dirname, 'frontend/dist'),
+  path.join(process.cwd(), 'frontend/dist'),
   '/app/frontend/dist'
 ];
 
