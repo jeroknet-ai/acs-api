@@ -79,14 +79,27 @@ async function fetchDevices(query = {}) {
 /**
  * Get single device details
  */
-async function fetchDevice(deviceId) {
+async function fetchDevice(identifier) {
   try {
-    const encodedId = encodeURIComponent(deviceId);
-    const response = await api.get(`/devices/${encodedId}`);
+    const encodedId = encodeURIComponent(identifier);
+    let response = await api.get(`/devices/${encodedId}`);
+    
+    // Fallback: If not found by ID, try querying by Serial Number
+    if (!response.data || (Array.isArray(response.data) && response.data.length === 0)) {
+       console.log(`🔍 Trace: ${identifier} not found, trying Serial Number query...`);
+       const query = { "Device.DeviceInfo.SerialNumber": identifier };
+       const fallbackRes = await api.get('/devices', { params: { query: JSON.stringify(query) } });
+       if (fallbackRes.data && fallbackRes.data.length > 0) return fallbackRes.data[0];
+       
+       const query2 = { "InternetGatewayDevice.DeviceInfo.SerialNumber": identifier };
+       const fallbackRes2 = await api.get('/devices', { params: { query: JSON.stringify(query2) } });
+       if (fallbackRes2.data && fallbackRes2.data.length > 0) return fallbackRes2.data[0];
+    }
+    
     return response.data;
   } catch (error) {
-    console.error(`❌ GenieACS fetchDevice(${deviceId}) error:`, error.message);
-    return null;
+    console.error(`❌ GenieACS fetchDevice(${identifier}) error:`, error.message);
+    return { error: error.message, identifier };
   }
 }
 
