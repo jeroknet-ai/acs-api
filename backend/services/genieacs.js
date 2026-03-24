@@ -222,8 +222,8 @@ function normalizeDevice(genieDevice) {
 
   // Precise SSID Cleaning: Remove frequency suffixes (2.4G, 5G, 2.4GHz, etc) at the END only
   if (typeof ssid === 'string') {
-    // This will catch Nama_2.4G, Nama_2.4GHz, etc. only if it's at the end
-    ssid = ssid.replace(/(_2\.4G|_5G|_2\.4GHz|_5GHz|_2G)$/i, '').trim();
+    // This will catch _2.4G, -2.4G,  2.4G, _5G, etc.
+    ssid = ssid.replace(/[_\-\s]*(2\.4G|5G|2\.4GHz|5GHz|2G|GHz)$/i, '').trim();
   }
 
   // Smart detection for Uptime
