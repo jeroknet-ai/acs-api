@@ -285,7 +285,15 @@ function normalizeDevice(genieDevice) {
                          get('InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries') || 0;
 
   // NEW: Extract LAN Host List (Detailed)
-  const hostsObj = genieDevice.InternetGatewayDevice?.LANDevice?.['1']?.Hosts?.Host || {};
+  const hostsObj = get('InternetGatewayDevice.LANDevice.1.Hosts.Host') || 
+                   get('InternetGatewayDevice.LANDevice.3.Hosts.Host') || 
+                   get('Device.Hosts.Host') || {};
+  
+  // DEBUG LOG (Only for the first few devices to avoid spam)
+  if (Object.keys(hostsObj).length > 0) {
+    console.log(`🔍 DEBUG HOSTS [${serialNumber}]: Found ${Object.keys(hostsObj).length} potential keys in Hosts.Host`);
+  }
+
   const hostList = Object.values(hostsObj)
     .filter(h => h && typeof h === 'object')
     .map(h => ({
