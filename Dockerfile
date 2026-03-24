@@ -1,24 +1,31 @@
 # ──────────────────────────────────────────
-# LITE DOCKERFILE (Simplified Directory Structure)
+# STAGE 1: Build Frontend
+# ──────────────────────────────────────────
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# ──────────────────────────────────────────
+# STAGE 2: Backend + Serve
 # ──────────────────────────────────────────
 FROM node:18-alpine
 WORKDIR /app
 
-# 1. Install compiler tools for ARM SQLite (Still needed for backend)
+# 1. Install compiler tools for ARM SQLite
 RUN apk add --no-cache python3 make g++ gcc
 
-# 2. Setup Backend Dependencies
+# 2. Setup Backend
 COPY backend/package*.json ./
 RUN npm install --omit=dev
-
-# 3. Copy Backend code
 COPY backend/ ./
 
-# 4. Copy PRE-BUILT Frontend to a simple 'public' folder
-RUN mkdir -p /app/public
-COPY frontend/dist/ /app/public/
+# 3. Copy built frontend from Stage 1 to 'public'
+COPY --from=frontend-builder /app/frontend/dist /app/public
 
-# 5. Start
+# 4. Start
 ENV PORT=1987
 EXPOSE 1987
 CMD ["node", "server.js"]
