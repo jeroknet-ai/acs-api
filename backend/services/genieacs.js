@@ -220,11 +220,10 @@ function normalizeDevice(genieDevice) {
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
              get('Device.DeviceInfo.ModelName') || 'N/A';
 
-  // Precise SSID Cleaning: Remove frequency suffixes (2.4G, 5G, 2.4GHz, etc) anywhere in the string
+  // Precise SSID Cleaning: Remove frequency suffixes (2.4G, 5G, 2.4GHz, etc) and anything that follows them
   if (typeof ssid === 'string') {
-    ssid = ssid.replace(/([_\-\s]?(2\.4G|5G|2\.4GHz|5GHz|2G))(\s.*|$)/i, '')
-               .replace(/(\s?-?\s?2\.4G|\s?-?\s?5G)$/i, '')
-               .trim();
+    // This will catch Nama_2.4G, Nama_2.4G_something, etc.
+    ssid = ssid.replace(/[_\-\s]*(2\.4|5|2)G(Hz)?.*$/i, '').trim();
   }
 
   // Smart detection for Uptime
