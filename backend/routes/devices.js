@@ -141,6 +141,22 @@ router.get('/:id', (req, res) => {
 });
 
 /**
+ * GET /api/devices/:id/trace - Trace ALL raw parameters from GenieACS
+ */
+router.get('/:id/trace', async (req, res) => {
+  try {
+    const device = db.prepare('SELECT serial_number FROM devices WHERE id = ?').get(req.params.id);
+    if (!device) return res.status(404).json({ error: 'Device not found' });
+    
+    // Fetch EVERYTHING from GenieACS for this serial
+    const raw = await genieacs.fetchDevice(device.serial_number);
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/devices/:id/reboot - Reboot device
  */
 router.post('/:id/reboot', async (req, res) => {
