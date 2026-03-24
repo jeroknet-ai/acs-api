@@ -378,88 +378,147 @@ export default function Devices() {
   const rxWarn = rxValues.filter(v => v < -25 && v >= -28).length;
   const rxCrit = rxValues.filter(v => v < -28).length;
 
-  return (
-    <div className="devices-page">
-      <div className="page-header">
-        <h1>Device Management</h1>
-        <p>Kelola dan monitoring semua perangkat ONT</p>
-      </div>
-
-      <div className="table-container">
-        <div className="table-header">
-          <h3>ONT Devices ({pagination?.total || devices?.length || 0})</h3>
-          <div className="table-actions">
-            <div className="search-input">
-              <Search size={14} />
-              <input placeholder="Cari serial, ssid..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-            <select className="filter-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
-              <option value="">All Status</option><option value="online">Online</option><option value="offline">Offline</option><option value="warning">Warning</option>
-            </select>
-            <button className="btn btn-secondary btn-sm" onClick={() => { fetchDevices(); fetchAll(); }}><RefreshCw size={13} /> Refresh</button>
-          </div>
+  // ──── Ultimate Defensive Render ────
+  try {
+    return (
+      <div className="devices-page">
+        <div className="page-header">
+          <h1>Device Management</h1>
+          <p>Kelola dan monitoring semua perangkat ONT</p>
         </div>
 
-        {loading ? <div className="loading-container"><div className="spinner" /></div> : (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>SSID</th>
-                  <th>Serial</th>
-                  <th>PPPoE</th>
-                  <th>Vendor</th>
-                  <th>Status</th>
-                  <th>RX Power</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(devices) && devices.length > 0 ? (
-                  devices.map(d => (
-                    <tr key={d?.id || Math.random()}>
-                      <td style={{ fontWeight: 500, fontSize: '0.95rem' }}>
-                        <Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />
-                        {cleanName(d?.ssid_name || d?.name)}
-                      </td>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{d?.serial_number || '-'}</td>
-                      <td style={{ color: 'var(--accent-blue)', fontSize: '0.85rem' }}>{d?.pppoe_username || '-'}</td>
-                      <td><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600, background: 'rgba(0,0,0,0.05)' }}>{d?.vendor || '-'}</span></td>
-                      <td><span className={`status-badge ${d?.status || 'offline'}`}><span className="dot" />{d?.status || 'offline'}</span></td>
-                      <td style={{ color: d?.rx_power && d?.rx_power < -25 ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'monospace' }}>{d?.rx_power ? `${d?.rx_power} dBm` : '-'}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
-                          <button className="btn-icon" title="Summon" onClick={() => api.post(`/devices/${d?.id}/refresh`)}><RefreshCw size={14} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20 }}>No devices found</td></tr>
-                )}
-              </tbody>
-            </table>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Showing {devices.length} of {pagination?.total || 0}</span>
-              <div style={{ display: 'flex', gap: 5 }}>
-                <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={13} /></button>
-                <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}>{page}/{pagination?.totalPages || 1}</span>
-                <button className="btn btn-secondary btn-sm" disabled={page >= (pagination?.totalPages || 1)} onClick={() => setPage(p => p + 1)}><ChevronRight size={13} /></button>
+        <div className="table-container">
+          <div className="table-header">
+            <h3>ONT Devices ({pagination?.total || devices?.length || 0})</h3>
+            <div className="table-actions">
+              <div className="search-input">
+                <Search size={14} />
+                <input 
+                  placeholder="Cari serial, ssid..." 
+                  value={search || ''} 
+                  onChange={e => setSearch(e.target.value)} 
+                />
               </div>
+              <select 
+                className="filter-select" 
+                value={statusFilter || ''} 
+                onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+              >
+                <option value="">All Status</option>
+                <option value="online">Online</option>
+                <option value="offline">Offline</option>
+                <option value="warning">Warning</option>
+              </select>
+              <button className="btn btn-secondary btn-sm" onClick={() => { fetchDevices(); fetchAll(); }}>
+                <RefreshCw size={13} /> Refresh
+              </button>
             </div>
-          </>
+          </div>
+
+          {loading ? (
+            <div className="loading-container"><div className="spinner" /></div>
+          ) : (
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>SSID</th>
+                    <th>Serial</th>
+                    <th>PPPoE</th>
+                    <th>Vendor</th>
+                    <th>Status</th>
+                    <th>RX Power</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.isArray(devices) && devices.length > 0 ? (
+                    devices.map((d, idx) => {
+                      if (!d) return <tr key={idx}><td colSpan={7}>Invalid Device Data</td></tr>;
+                      return (
+                        <tr key={d.id || idx}>
+                          <td style={{ fontWeight: 500, fontSize: '0.95rem' }}>
+                            <Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />
+                            {cleanName(d.ssid_name || d.name || 'Unnamed')}
+                          </td>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{d.serial_number || '-'}</td>
+                          <td style={{ color: 'var(--accent-blue)', fontSize: '0.85rem' }}>{d.pppoe_username || '-'}</td>
+                          <td>
+                            <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 600, background: 'rgba(0,0,0,0.05)' }}>
+                              {d.vendor || '-'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`status-badge ${d.status || 'offline'}`}>
+                              <span className="dot" />{d.status || 'offline'}
+                            </span>
+                          </td>
+                          <td style={{ color: (d.rx_power && d.rx_power < -25) ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'monospace' }}>
+                            {d.rx_power ? `${d.rx_power} dBm` : '-'}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
+                              <button className="btn-icon" title="Summon" onClick={() => api.post(`/devices/${d.id}/refresh`).catch(() => {})}><RefreshCw size={14} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>No devices found</td></tr>
+                  )}
+                </tbody>
+              </table>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Showing {devices?.length || 0} of {pagination?.total || 0}
+                </span>
+                <div style={{ display: 'flex', gap: 5 }}>
+                  <button 
+                    className="btn btn-secondary btn-sm" 
+                    disabled={page <= 1} 
+                    onClick={() => setPage(p => p - 1)}
+                  >
+                    <ChevronLeft size={13} />
+                  </button>
+                  <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center' }}>
+                    {page}/{pagination?.totalPages || 1}
+                  </span>
+                  <button 
+                    className="btn btn-secondary btn-sm" 
+                    disabled={page >= (pagination?.totalPages || 1)} 
+                    onClick={() => setPage(p => p + 1)}
+                  >
+                    <ChevronRight size={13} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {selectedDevice && (
+          <DeviceDetailModal 
+            device={selectedDevice} 
+            onClose={() => setSelectedDevice(null)} 
+            onSave={() => { fetchDevices(); fetchAll(); }} 
+          />
         )}
       </div>
-
-      {selectedDevice && (
-        <DeviceDetailModal 
-          device={selectedDevice} 
-          onClose={() => setSelectedDevice(null)} 
-          onSave={() => { fetchDevices(); fetchAll(); }} 
-        />
-      )}
-    </div>
-  );
+    );
+  } catch (err) {
+    console.error('CRITICAL RENDER ERROR:', err);
+    return (
+      <div style={{ padding: 30, background: '#fff0f0', border: '2px solid #ff4d4f', borderRadius: 12, margin: 20 }}>
+        <h3 style={{ color: '#ff4d4f', marginBottom: 12 }}>🚨 Terjadi Kesalahan Tampilan</h3>
+        <p style={{ fontSize: '0.9rem', marginBottom: 15 }}>Halaman tidak bisa dimuat karena data tidak valid atau ada kegagalan internal.</p>
+        <pre style={{ background: '#000', color: '#0f0', padding: 10, borderRadius: 6, fontSize: '0.8rem', overflow: 'auto' }}>
+          {err.message}\n{err.stack}
+        </pre>
+        <button className="btn btn-primary" style={{ marginTop: 15 }} onClick={() => window.location.reload()}>Muat Ulang Halaman</button>
+      </div>
+    );
+  }
 }
