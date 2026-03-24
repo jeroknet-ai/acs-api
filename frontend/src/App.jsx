@@ -14,17 +14,21 @@ import './index.css';
 function App() {
   const { connected, stats } = useSocket();
   const [appName, setAppName] = useState('JNetwork');
-  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem('jnetwork_auth') === 'true');
-
-  const handleLogout = () => {
-    localStorage.removeItem('jnetwork_auth');
-    setIsAuthenticated(false);
-  };
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    try {
+      const auth = localStorage.getItem('jnetwork_auth');
+      if (auth === 'true') setIsAuthenticated(true);
+    } catch (e) {
+      console.error('Auth check failed:', e);
+    }
+
     getSettings().then(res => {
-      if (res.data.app_name) setAppName(res.data.app_name);
-    }).catch(() => {});
+      if (res && res.data && res.data.app_name) setAppName(res.data.app_name);
+    }).catch(err => {
+      console.error('Settings fetch failed:', err);
+    });
   }, []);
 
   return (
