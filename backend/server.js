@@ -95,10 +95,12 @@ io.on('connection', (socket) => {
  */
 async function pollGenieACS() {
   try {
-    // FORCE CLEAR: Hapus semua data lama sebelum mengambil data baru dari GenieACS
-    db.prepare('DELETE FROM devices').run();
-
     const rawDevices = await genieacs.fetchDevices();
+    if (!rawDevices || rawDevices.length === 0) {
+      console.log('⚠️ Polling: No devices found in GenieACS');
+      return;
+    }
+
     const currentSerials = rawDevices.map(d => genieacs.normalizeDevice(d)?.serial_number).filter(Boolean);
 
     for (const raw of rawDevices) {
@@ -106,9 +108,6 @@ async function pollGenieACS() {
       if (!normalized) continue;
 
       const lastSeen = new Date().toISOString();
-      const status = 'online';
-
-      // UPSERT logic: update if exists, insert if new
       db.prepare(`
         INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -119,17 +118,15 @@ async function pollGenieACS() {
           uptime=excluded.uptime, status=excluded.status, last_seen=excluded.last_seen
       `).run(
         normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
-        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, status, lastSeen
+        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', lastSeen
       );
     }
 
-    // Remove devices that NO LONGER exist in GenieACS
     if (currentSerials.length > 0) {
       const placeholders = currentSerials.map(() => '?').join(',');
       db.prepare(`DELETE FROM devices WHERE serial_number NOT IN (${placeholders})`).run(...currentSerials);
     }
 
-    // Broadcast updates
     const stats = {
       total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
       online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
@@ -138,6 +135,7 @@ async function pollGenieACS() {
     };
     io.emit('stats:update', stats);
     io.emit('polling:success', { count: rawDevices.length });
+    console.log(`✅ Polling: Synced ${rawDevices.length} devices`);
   } catch (error) {
     console.error('❌ GenieACS Polling Error:', error.message);
   }
@@ -167,26 +165,6 @@ app.get('/diag/public', (req, res) => {
 // ==========================================
 const distPath = path.join(__dirname, 'public');
 
-if (fs.existsSync(path.join(distPath, 'index.html'))) {
-  const assetsExist = fs.existsSync(path.join(distPath, 'assets'));
-  console.log(`✅ STATIC: Serving from ${distPath} (Assets folder: ${assetsExist ? 'Yes' : 'NO!'})`);
-  
-  // 1. DYNAMIC ASSET LOCATOR (Deep Scan)
-  app.use('/assets', (req, res, next) => {
-    console.log(`🔍 ASSET REQUEST: ${req.path}`);
-    let filePath = path.join(distPath, 'assets', req.path);
-    if (!fs.existsSync(filePath)) filePath = path.join(distPath, req.path);
-    
-    if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isDirectory()) {
-      console.log(`   -> FOUND: ${filePath}`);
-      if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
-      if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
-      return res.sendFile(filePath);
-    }
-    console.log(`   -> NOT FOUND: ${filePath}`);
-    next();
-  });
-
 // ──── Debug Endpoints ────
 app.get('/api/debug/genieacs', async (req, res) => {
   try {
@@ -207,15 +185,17 @@ app.get('/api/debug/db', (req, res) => {
 });
 
 // ──── Static Serving ────
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath));
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) return res.status(404).json({ error: 'API not found' });
-  res.sendFile(path.join(publicPath, 'index.html'));
-});
+const distPath = path.join(__dirname, 'public');
+if (fs.existsSync(path.join(distPath, 'index.html'))) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) return res.status(404).json({ error: 'API Not Found' });
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
 } else {
-  console.log('❌ CRITICAL: No frontend found in:', distPath);
+  console.log('⚠️ Warning: Frontend public folder not found');
 }
+
 
 // ==========================================
 // Start Server
