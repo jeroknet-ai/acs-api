@@ -499,4 +499,5 @@ export default function Devices() {
     );
   }
 }
+}
 
