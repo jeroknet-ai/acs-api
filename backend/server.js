@@ -144,30 +144,20 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 pollGenieACS();
 
 // ==========================================
-// Serve Static Frontend (Single Container / Docker Mode)
+// Serve Static Frontend
 // ==========================================
-// Try multiple paths to find the built frontend (Docker vs Local)
-let distPaths = [
-  path.join(__dirname, '../frontend/dist'),
-  path.join(__dirname, 'frontend/dist'),
-  path.join(process.cwd(), 'frontend/dist'),
-  '/app/frontend/dist'
-];
+let distPath = path.join(__dirname, '../frontend/dist'); // Local dev fallback
+if (!fs.existsSync(distPath)) distPath = path.join(__dirname, 'public'); // Docker production
 
-let distPath = distPaths.find(p => {
-  console.log(`🔍 Checking frontend path: ${p}`);
-  return fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'));
-});
-
-if (distPath) {
-  console.log(`✅ SUCCESS: Serving static files from: ${distPath}`);
+if (fs.existsSync(distPath)) {
+  console.log(`✅ Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
   // Catch-all for React Router
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
-  console.log('❌ ERROR: Frontend dist folder or index.html not found in any of:', distPaths);
+  console.log('❌ ERROR: Static folder not found:', distPath);
 }
 
 // ==========================================
