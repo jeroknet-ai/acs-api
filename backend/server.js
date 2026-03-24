@@ -144,20 +144,26 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 pollGenieACS();
 
 // ==========================================
-// Serve Static Frontend
+// Serve Static Frontend (Production Build)
 // ==========================================
-let distPath = path.join(__dirname, '../frontend/dist'); // Local dev fallback
-if (!fs.existsSync(distPath)) distPath = path.join(__dirname, 'public'); // Docker production
+// Pre-calculate the most likely paths for Docker and Local
+const possibleDistPaths = [
+  path.join(process.cwd(), 'public'),             // Docker Prod (Consolidated)
+  path.join(__dirname, 'public'),                // Local Prod (Flat)
+  path.join(__dirname, '../frontend/dist'),      // Local Dev (Nested)
+];
 
-if (fs.existsSync(distPath)) {
-  console.log(`✅ Serving static files from: ${distPath}`);
+let distPath = possibleDistPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+if (distPath) {
+  console.log(`✅ PROD: Serving assets from: ${distPath}`);
   app.use(express.static(distPath));
-  // Catch-all for React Router
+  // Catch-all for SPA routing
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
-  console.log('❌ ERROR: Static folder not found:', distPath);
+  console.log('❌ CRITICAL: No static assets found in:', possibleDistPaths);
 }
 
 // ==========================================
