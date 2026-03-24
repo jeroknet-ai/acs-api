@@ -151,6 +151,10 @@ let distPath = path.join(__dirname, '../frontend/dist');
 if (!fs.existsSync(distPath)) {
   distPath = path.join(__dirname, 'frontend/dist');
 }
+if (!fs.existsSync(distPath)) {
+  // Absolute fallback for Docker root structure
+  distPath = '/app/frontend/dist';
+}
 
 if (fs.existsSync(distPath)) {
   console.log(`📦 Serving static files from: ${distPath}`);
