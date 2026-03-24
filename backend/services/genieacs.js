@@ -192,9 +192,9 @@ function normalizeDevice(genieDevice) {
                        genieDevice._id || 'N/A';
 
   // Aggressive Vendor Detection: Check multiple fields for keywords
-  const manufacturer = get('Device.DeviceInfo.Manufacturer') || get('InternetGatewayDevice.DeviceInfo.Manufacturer') || '';
+  const manufacturer = get('Device.DeviceInfo.Manufacturer') || get('InternetGatewayDevice.DeviceInfo.Manufacturer') || genieDevice._deviceId?._Manufacturer || '';
   const description = get('Device.DeviceInfo.Description') || get('InternetGatewayDevice.DeviceInfo.Description') || '';
-  const modelName = get('Device.DeviceInfo.ModelName') || get('InternetGatewayDevice.DeviceInfo.ModelName') || '';
+  const modelName = get('Device.DeviceInfo.ModelName') || get('InternetGatewayDevice.DeviceInfo.ModelName') || genieDevice._deviceId?._ProductClass || '';
   const modelNumber = get('Device.DeviceInfo.ModelNumber') || '';
   
   const searchString = `${manufacturer} ${description} ${modelName} ${modelNumber} ${genieDevice._id || ''}`.toLowerCase();
@@ -211,6 +211,7 @@ function normalizeDevice(genieDevice) {
   // Aggressive Model Detection
   let model = get('Device.DeviceInfo.ModelName') || 
               get('InternetGatewayDevice.DeviceInfo.ModelName') || 
+              genieDevice._deviceId?._ProductClass ||
               get('Device.DeviceInfo.ModelNumber') ||
               get('Device.DeviceInfo.ModelDescription') ||
               get('Device.DeviceInfo.Description') || 
