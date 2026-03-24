@@ -145,12 +145,18 @@ router.get('/:id', (req, res) => {
  */
 router.get('/:id/trace', async (req, res) => {
   try {
-    const device = db.prepare('SELECT serial_number FROM devices WHERE id = ?').get(req.params.id);
+    const device = db.prepare('SELECT serial_number, device_id FROM devices WHERE id = ?').get(req.params.id);
     if (!device) return res.status(404).json({ error: 'Device not found' });
     
-    // Fetch EVERYTHING from GenieACS for this serial
-    const raw = await genieacs.fetchDevice(device.serial_number);
-    res.json(raw);
+    // Try BOTH device_id and serial_number
+    console.log(`🔍 Tracing Device ID: ${device.device_id} or Serial: ${device.serial_number}`);
+    let raw = await genieacs.fetchDevice(device.device_id);
+    
+    if (!raw || raw.error) {
+       raw = await genieacs.fetchDevice(device.serial_number);
+    }
+
+    res.json(raw || { error: 'GenieACS returned nothing for this device', device });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
