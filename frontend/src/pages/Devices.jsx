@@ -318,11 +318,18 @@ export default function Devices() {
         if (statusFilter) params.status = statusFilter;
         if (vendorFilter) params.vendor = vendorFilter;
         if (debouncedSearch) params.search = debouncedSearch;
+        
+        console.log('📡 FETCH DEVICES:', params);
         const res = await getDevices(params);
-        setDevices(res.data.data);
-        setPagination(res.data.pagination);
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+        console.log('📡 FETCH SUCCESS:', res.data?.data?.length, 'devices found');
+        
+        setDevices(res.data?.data || []);
+        setPagination(res.data?.pagination || {});
+      } catch (err) { 
+        console.error('📡 FETCH ERROR:', err);
+      } finally { 
+        setLoading(false); 
+      }
     })();
   }, [page, statusFilter, vendorFilter, debouncedSearch, limit]);
 
@@ -425,27 +432,52 @@ export default function Devices() {
             <table>
               <thead><tr><th>SSID</th><th>Serial</th><th>PPPoE</th><th>Vendor</th><th>Model</th><th>Status</th><th>RX Power</th><th>Uptime</th><th>ODP</th><th>Actions</th></tr></thead>
               <tbody>
-                {devices.map(d => (
-                  <tr key={d.id}>
-                    <td style={{ fontWeight: 500, fontSize: '0.95rem' }}><Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />{cleanName(d.ssid_name || d.name)}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{d.serial_number}</td>
-                    <td style={{ fontSize: '0.9rem', color: 'var(--accent-blue)' }}>{d.pppoe_username || '-'}</td>
-                    <td><span style={{ padding: '3px 8px', borderRadius: 4, fontSize: '0.83rem', fontWeight: 600, background: d.vendor === 'Huawei' ? 'rgba(229,57,53,0.06)' : d.vendor === 'ZTE' ? 'rgba(33,150,243,0.06)' : 'rgba(67,160,71,0.06)', color: d.vendor === 'Huawei' ? '#e53935' : d.vendor === 'ZTE' ? '#2196F3' : '#43a047' }}>{d.vendor}</span></td>
-                    <td style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{d.model}</td>
-                    <td><span className={`status-badge ${d.status}`} style={{ fontSize: '0.8rem' }}><span className="dot" />{d.status}</span></td>
-                    <td style={{ color: d.rx_power && d.rx_power < -25 ? 'var(--accent-red)' : d.rx_power ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.9rem' }}>{d.rx_power ? `${d.rx_power} dBm` : '-'}</td>
-                    <td style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{formatUptime(d.uptime)}</td>
-                    <td style={{ fontSize: '0.9rem', color: 'var(--accent-blue)' }}>{d.odp_name || '-'}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 3 }}>
-                        <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
-                        <button className="btn-icon" title="Summon Device" onClick={async () => { try { await api.post(`/devices/${d.id}/refresh`); alert(`Summon berhasil dikirim ke perangkat ${d.name}!`); } catch { alert('Gagal melakukan summon'); } }}><RefreshCw size={14} /></button>
-                        <button className="btn-icon" title="Hapus" onClick={() => handleDelete(d.id)} style={{ color: 'var(--accent-red)' }}><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {devices.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>No devices found</td></tr>}
+                {Array.isArray(devices) && devices.length > 0 ? (
+                  devices.map(d => (
+                    <tr key={d?.id || Math.random()}>
+                      <td style={{ fontWeight: 500, fontSize: '0.95rem' }}>
+                        <Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />
+                        {cleanName(d?.ssid_name || d?.name)}
+                      </td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{d?.serial_number || '-'}</td>
+                      <td style={{ fontSize: '0.9rem', color: 'var(--accent-blue)' }}>{d?.pppoe_username || '-'}</td>
+                      <td>
+                        <span style={{ 
+                          padding: '3px 8px', borderRadius: 4, fontSize: '0.83rem', fontWeight: 600, 
+                          background: d?.vendor === 'Huawei' ? 'rgba(229,57,53,0.06)' : d?.vendor === 'ZTE' ? 'rgba(33,150,243,0.06)' : 'rgba(67,160,71,0.06)', 
+                          color: d?.vendor === 'Huawei' ? '#e53935' : d?.vendor === 'ZTE' ? '#2196F3' : '#43a047' 
+                        }}>
+                          {d?.vendor || '-'}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{d?.model || '-'}</td>
+                      <td>
+                        <span className={`status-badge ${d?.status || 'offline'}`} style={{ fontSize: '0.8rem' }}>
+                          <span className="dot" />{d?.status || 'offline'}
+                        </span>
+                      </td>
+                      <td style={{ color: d?.rx_power && d?.rx_power < -25 ? 'var(--accent-red)' : d?.rx_power ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                        {d?.rx_power ? `${d?.rx_power} dBm` : '-'}
+                      </td>
+                      <td style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{formatUptime(d?.uptime)}</td>
+                      <td style={{ fontSize: '0.9rem', color: 'var(--accent-blue)' }}>{d?.odp_name || '-'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 3 }}>
+                          <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
+                          <button className="btn-icon" title="Summon Device" onClick={async () => { 
+                            try { 
+                              await api.post(`/devices/${d?.id}/refresh`); 
+                              alert(`Summon berhasil dikirim ke perangkat ${d?.name || 'tersebut'}!`); 
+                            } catch { alert('Gagal melakukan summon'); } 
+                          }}><RefreshCw size={14} /></button>
+                          <button className="btn-icon" title="Hapus" onClick={() => handleDelete(d?.id)} style={{ color: 'var(--accent-red)' }}><Trash2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: 36, color: 'var(--text-muted)' }}>No devices found</td></tr>
+                )}
               </tbody>
             </table>
 
