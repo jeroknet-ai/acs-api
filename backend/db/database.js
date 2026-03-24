@@ -60,6 +60,10 @@ db.exec(`
     lat REAL,
     lng REAL,
     odp_id INTEGER,
+    lan_count INTEGER DEFAULT 0,
+    pppoe_user TEXT,
+    wan_tx INTEGER DEFAULT 0,
+    wan_rx INTEGER DEFAULT 0,
     last_seen DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (odp_id) REFERENCES odp(id)

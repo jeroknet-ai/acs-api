@@ -137,27 +137,30 @@ function DeviceDetailModal({ device, onClose, onSave }) {
         {/* Connected */}
         {tab === 'connected' && (
           <div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 10 }}>{connectedDevices.length} devices terhubung</p>
-            <table className="data-table">
-              <thead><tr><th>Hostname</th><th>MAC</th><th>IP</th><th>Type</th><th>RSSI</th></tr></thead>
-              <tbody>
-                {connectedDevices.map((d, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 500 }}>{d.hostname}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{d.mac}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{d.ip}</td>
-                    <td>{d.type}</td>
-                    <td style={{ color: parseInt(d.rssi) > -50 ? 'var(--accent-green)' : 'var(--accent-orange)' }}>{d.rssi}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 10 }}>{device.lan_count || 0} devices terhubung ke ONT ini</p>
+            <div className="card" style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>
+              <Users size={40} style={{ marginBottom: 10, opacity: 0.5 }} />
+              <p>Host list detail coming soon from GenieACS polling.</p>
+            </div>
           </div>
         )}
 
         {/* WAN — Editable + Add */}
         {tab === 'wan' && (
           <div>
+            <div className="card" style={{ marginBottom: 15, padding: 14, border: '1px solid var(--accent-blue)' }}>
+              <h4 style={{ fontSize: '0.85rem', marginBottom: 10, color: 'var(--accent-blue)' }}>Live Stats</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="stat-mini">
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>PPPoE User</label>
+                  <div style={{ fontWeight: 600 }}>{device.pppoe_user || '-'}</div>
+                </div>
+                <div className="stat-mini">
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total Traffic</label>
+                  <div style={{ fontWeight: 600 }}>{device.wan_rx ? ((device.wan_rx + device.wan_tx) / (1024 * 1024)).toFixed(2) : '0.00'} MB</div>
+                </div>
+              </div>
+            </div>
             {wanList.map(w => (
               <div key={w.id} className="card" style={{ marginBottom: 10, padding: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
