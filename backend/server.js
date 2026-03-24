@@ -151,6 +151,8 @@ async function pollGenieACS() {
       }
     }
 
+    console.log(`📊 Polling Done: ${syncedCount}/${genieCount} devices saved to DB`);
+
     const stats = {
       total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
       online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
