@@ -16,8 +16,8 @@ function DeviceDetailModal({ device, onClose, onSave }) {
     { id: 1, mode: 'PPPoE', username: 'user@isp.net', vlan: '100', ip: '100.64.1.15', gateway: '10.0.0.1', dns1: '8.8.8.8', dns2: '8.8.4.4', mtu: '1492', nat: 'Enabled' },
   ];
   const defaultSsid = [
-    { id: 1, ssid: `${device?.name || 'WiFi'}_2.4G`, band: '2.4 GHz', security: 'WPA2-PSK', channel: 'Auto', width: '20/40 MHz', password: 'password123', enabled: true },
-    { id: 2, ssid: `${device?.name || 'WiFi'}_5G`, band: '5 GHz', security: 'WPA2-PSK', channel: 'Auto', width: '80 MHz', password: 'password123', enabled: true },
+    { id: 1, ssid: `${device?.name || 'WiFi'}`, band: '2.4 GHz', security: 'WPA2-PSK', channel: 'Auto', width: '20/40 MHz', password: 'password123', enabled: true },
+    { id: 2, ssid: `${device?.name || 'WiFi'}`, band: '5 GHz', security: 'WPA2-PSK', channel: 'Auto', width: '80 MHz', password: 'password123', enabled: true },
   ];
   const defaultUsers = [
     { id: 1, username: 'admin', password: 'password123', role: 'Administrator', access: 'Full', status: 'active' },
