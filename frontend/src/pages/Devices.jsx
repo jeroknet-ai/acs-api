@@ -138,10 +138,26 @@ function DeviceDetailModal({ device, onClose, onSave }) {
         {tab === 'connected' && (
           <div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 10 }}>{device.lan_count || 0} devices terhubung ke ONT ini</p>
-            <div className="card" style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>
-              <Users size={40} style={{ marginBottom: 10, opacity: 0.5 }} />
-              <p>Host list detail coming soon from GenieACS polling.</p>
-            </div>
+            <table className="data-table">
+              <thead><tr><th>Hostname</th><th>MAC</th><th>IP</th></tr></thead>
+              <tbody>
+                {(() => {
+                  try {
+                    const hosts = JSON.parse(device.lan_hosts || '[]');
+                    if (hosts.length === 0) return <tr><td colSpan={3} style={{textAlign:'center', padding:20, color:'var(--text-muted)'}}>No active hosts detected</td></tr>;
+                    return hosts.map((h, i) => (
+                      <tr key={i}>
+                        <td style={{ fontWeight: 500 }}>{h.hostname}</td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{h.mac}</td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{h.ip}</td>
+                      </tr>
+                    ));
+                  } catch (e) {
+                    return <tr><td colSpan={3} style={{textAlign:'center', padding:20, color:'var(--text-red)'}}>Data error</td></tr>;
+                  }
+                })()}
+              </tbody>
+            </table>
           </div>
         )}
 

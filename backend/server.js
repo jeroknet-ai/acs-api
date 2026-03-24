@@ -131,8 +131,8 @@ async function pollGenieACS() {
 
     let syncedCount = 0;
     const insertStmt = db.prepare(`
-      INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id, lan_count, pppoe_user, wan_tx, wan_rx)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id, lan_count, pppoe_user, wan_tx, wan_rx, lan_hosts)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const raw of rawDevices) {
@@ -143,7 +143,7 @@ async function pollGenieACS() {
         insertStmt.run(
           normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
           normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id,
-          normalized.lan_count, normalized.pppoe_user, normalized.wan_tx, normalized.wan_rx
+          normalized.lan_count, normalized.pppoe_user, normalized.wan_tx, normalized.wan_rx, normalized.lan_hosts
         );
         syncedCount++;
       } catch (dbErr) {

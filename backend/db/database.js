@@ -61,6 +61,7 @@ db.exec(`
     lng REAL,
     odp_id INTEGER,
     lan_count INTEGER DEFAULT 0,
+    lan_hosts TEXT,
     pppoe_user TEXT,
     wan_tx INTEGER DEFAULT 0,
     wan_rx INTEGER DEFAULT 0,

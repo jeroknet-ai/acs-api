@@ -63,6 +63,10 @@ async function fetchDevices(query = {}) {
       // LAN / Connected Devices
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations',
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WLAN_AssociatedDeviceNumberOfEntries',
+      'InternetGatewayDevice.LANDevice.1.Hosts.Host.*.HostName',
+      'InternetGatewayDevice.LANDevice.1.Hosts.Host.*.IPAddress',
+      'InternetGatewayDevice.LANDevice.1.Hosts.Host.*.MACAddress',
+      'InternetGatewayDevice.LANDevice.1.Hosts.Host.*.Active',
       'Device.Hosts.HostNumberOfEntries', 'InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries',
       // WAN Specifics
       'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_HW_VLANID',
@@ -280,7 +284,17 @@ function normalizeDevice(genieDevice) {
                          get('Device.Hosts.HostNumberOfEntries') || 
                          get('InternetGatewayDevice.LANDevice.1.Hosts.HostNumberOfEntries') || 0;
 
-  // PPPoE User (Username) - Used for 'User' count
+  // NEW: Extract LAN Host List (Detailed)
+  const hostsObj = genieDevice.InternetGatewayDevice?.LANDevice?.['1']?.Hosts?.Host || {};
+  const hostList = Object.values(hostsObj)
+    .filter(h => h && typeof h === 'object')
+    .map(h => ({
+      hostname: h.HostName?._value || 'Unknown',
+      ip: h.IPAddress?._value || '-',
+      mac: h.MACAddress?._value || '-',
+      active: h.Active?._value === true || h.Active?._value === 'true'
+    }))
+    .filter(h => h.mac !== '-');
   const pppoeUser = get('Device.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username') ||
                     get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.Username') || null;
 
@@ -302,6 +316,7 @@ function normalizeDevice(genieDevice) {
     tx_power: txPowerValue,
     uptime: parseInt(uptime) || 0,
     lan_count: parseInt(lanDeviceCount) || 0,
+    lan_hosts: JSON.stringify(hostList), // Store as JSON string in DB
     pppoe_user: pppoeUser,
     wan_tx: parseInt(txBytes) || 0,
     wan_rx: parseInt(rxBytes) || 0
