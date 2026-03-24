@@ -66,12 +66,8 @@ function DeviceDetailModal({ device, onClose, onSave }) {
 
   function showSaved(msg) { setSaveMsg(msg); setTimeout(() => setSaveMsg(''), 2000); }
 
-  if (!device) return null;
-
-  }
-
-
   function updateSsid(id, field, val) {
+
     setSsidList(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
   }
 
@@ -361,16 +357,6 @@ export default function Devices() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Hapus device ini?')) return;
-    try {
-      await api.delete(`/devices/${id}`);
-      fetchDevices();
-      fetchAll();
-    } catch { alert('Failed'); }
-  }
-
-  }
-
 
   // RX Power statistics
   const rxValues = allDevices.filter(d => d.rx_power != null).map(d => d.rx_power);
