@@ -29,8 +29,11 @@ function App() {
     }).catch(err => {
       console.error('Settings fetch failed:', err);
     });
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('jnetwork_auth');
+    setIsAuthenticated(true); // Temporary change to force bypass login for testing if needed
     setIsAuthenticated(false);
   };
 
