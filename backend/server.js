@@ -97,32 +97,62 @@ io.on('connection', (socket) => {
 async function pollGenieACS() {
   try {
     const rawDevices = await genieacs.fetchDevices();
-    if (!rawDevices || rawDevices.length === 0) return;
-    const currentSerials = [];
+    const genieCount = rawDevices?.length || 0;
+    console.log(`📡 Polling: GenieACS has ${genieCount} devices`);
+
+    // DANGEROUS BUT NECESSARY: If GenieACS returns a valid list (even empty), 
+    // we should sync our DB to match it exactly.
+    if (!Array.isArray(rawDevices)) {
+      console.log('⚠️ Polling: Invalid response from GenieACS, skipping sync');
+      return;
+    }
+
+    // Nuke all existing devices to ensure we only show what's REAL in GenieACS right now
+    // This removes the 119 "Ghost" devices that are causing blank columns.
+    db.prepare('DELETE FROM devices').run();
+    console.log('🧹 DB: Cleared stale devices for fresh sync');
+
+    if (genieCount === 0) {
+      io.emit('stats:update', { total: 0, online: 0, offline: 0, warning: 0 });
+      return;
+    }
+
+    let syncedCount = 0;
+    const insertStmt = db.prepare(`
+      INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
     for (const raw of rawDevices) {
       const normalized = genieacs.normalizeDevice(raw);
       if (!normalized) continue;
-      currentSerials.push(normalized.serial_number);
-      db.prepare(`
-        INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(serial_number) DO UPDATE SET
-          name=excluded.name, vendor=excluded.vendor, model=excluded.model, 
-          firmware=excluded.firmware, ip_address=excluded.ip_address, 
-          rx_power=excluded.rx_power, tx_power=excluded.tx_power, 
-          uptime=excluded.uptime, status=excluded.status, last_seen=excluded.last_seen,
-          device_id=excluded.device_id
-      `).run(
+      
+      insertStmt.run(
         normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
         normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id
       );
+      syncedCount++;
     }
+
+    const stats = {
+      total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
+      online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
+      offline: 0,
+      warning: 0,
+    };
+    io.emit('stats:update', stats);
+    io.emit('polling:success', { count: syncedCount });
+    console.log(`✅ Polling: Successfully synced ${syncedCount}/${genieCount} devices`);
   } catch (error) {
     console.error('❌ Polling Error:', error.message);
   }
 }
+async function forcedInitialPoll() {
+  console.log('🚀 SYSTEM: Starting initial heavy sync...');
+  await pollGenieACS();
+}
 setInterval(pollGenieACS, POLL_INTERVAL);
-pollGenieACS();
+forcedInitialPoll();
 
 // ==========================================
 // Serve Static Frontend (Fail-Proof)
