@@ -443,8 +443,9 @@ export default function Devices() {
                       </td>
                       <td style={{ fontWeight: 500 }}>{d.rx_power ? `${d.rx_power} dBm` : '-'}</td>
                       <td>
-                        <div style={{ display: 'flex', gap: 4 }}>
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                           <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
+                          <a href={`/api/devices/${d.id}/trace`} target="_blank" rel="noreferrer" style={{ fontSize: '10px', color: 'var(--text-muted)', textDecoration: 'none' }}>Trace</a>
                           <button className="btn-icon" title="Refresh" onClick={() => api.post(`/devices/${d.id}/refresh`).catch(() => {})}><RefreshCw size={14} /></button>
                           <button className="btn-icon" title="Hapus" style={{ color: 'var(--accent-red)' }} onClick={() => handleDelete(d.id)}><Trash2 size={14} /></button>
                         </div>
