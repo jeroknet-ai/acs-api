@@ -187,8 +187,32 @@ if (fs.existsSync(path.join(distPath, 'index.html'))) {
     next();
   });
 
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+// ──── Debug Endpoints ────
+app.get('/api/debug/genieacs', async (req, res) => {
+  try {
+    const raw = await genieacs.fetchDevices();
+    res.json({ count: raw.length, last_update: new Date().toISOString(), data: raw });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/debug/db', (req, res) => {
+  try {
+    const devices = db.prepare('SELECT * FROM devices').all();
+    res.json({ count: devices.length, devices });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ──── Static Serving ────
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) return res.status(404).json({ error: 'API not found' });
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 } else {
   console.log('❌ CRITICAL: No frontend found in:', distPath);
 }
