@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/', (req, res) => {
   try {
     const { status, vendor, search, page = 1, limit = 50 } = req.query;
-    let query = "SELECT d.*, o.name as odp_name FROM devices d LEFT JOIN odp o ON d.odp_id = o.id LEFT JOIN device_configs dc ON dc.device_id = d.id AND dc.config_type = 'ssid'";
+    let query = "SELECT d.*, o.name as odp_name FROM devices d LEFT JOIN odp o ON d.odp_id = o.id";
     const conditions = [];
     const params = [];
 
