@@ -144,13 +144,24 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 pollGenieACS();
 
 // ==========================================
+// Diagnostic Endpoint (Check /public)
+// ==========================================
+app.get('/diag/public', (req, res) => {
+  const distPath = '/public';
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    const assets = fs.existsSync(path.join(distPath, 'assets')) ? fs.readdirSync(path.join(distPath, 'assets')) : 'MISSING';
+    res.json({ status: 'OK', path: distPath, files, assets });
+  } else {
+    res.json({ status: 'ERROR', path: distPath, message: 'Not Found' });
+  }
+});
+
+// ==========================================
 // Serve Static Frontend (Fail-Proof)
 // ==========================================
-// Check ROOT /public first (Docker definitive path)
 let distPath = '/public'; 
-
 if (!fs.existsSync(path.join(distPath, 'index.html'))) {
-  // Fallback to local paths
   distPath = path.join(__dirname, 'public'); 
   if (!fs.existsSync(path.join(distPath, 'index.html'))) {
     distPath = path.join(__dirname, '../frontend/dist');
@@ -158,12 +169,28 @@ if (!fs.existsSync(path.join(distPath, 'index.html'))) {
 }
 
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
-  const assetsExist = fs.existsSync(path.join(distPath, 'assets'));
-  console.log(`✅ STATIC: Serving from ${distPath} (Assets: ${assetsExist ? 'Yes' : 'NO!'})`);
+  console.log(`✅ STATIC: Serving from ${distPath}`);
+  
+  // 1. Explicitly serve assets with correct MIME types BEFORE general static
+  app.use('/assets', (req, res, next) => {
+    const filePath = path.join(distPath, 'assets', req.path);
+    if (fs.existsSync(filePath)) {
+      if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+      if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
+      return res.sendFile(filePath);
+    }
+    next();
+  });
+
+  // 2. Fallback for other files
   app.use(express.static(distPath));
-  app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+
+  // 3. SPA catch-all
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
 } else {
-  console.log('❌ CRITICAL: No frontend found in /public or local folders!');
+  console.log('❌ CRITICAL: No frontend found!');
 }
 
 // ==========================================
