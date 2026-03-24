@@ -61,6 +61,12 @@ function DeviceDetailModal({ device, onClose, onSave }) {
     return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.floor((s % 3600) / 60)}m`;
   }
 
+  function cleanName(name) {
+    if (!name || typeof name !== 'string') return '-';
+    // Deep clean SSID: remove common suffixes _2.4G, -5G, etc
+    return name.replace(/[_\-\s]*(2\.4|5|2)G(Hz)?.*$/i, '').trim();
+  }
+
   function updateSsid(id, field, val) {
     setSsidList(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
   }
@@ -92,7 +98,7 @@ function DeviceDetailModal({ device, onClose, onSave }) {
       <div className="modal-content wide" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {device.name}
+            {cleanName(device.name)}
             <span className={`status-badge ${device.status}`}><span className="dot" />{device.status}</span>
           </h3>
           <button className="btn-icon" onClick={onClose}><X size={16} /></button>
@@ -421,7 +427,7 @@ export default function Devices() {
               <tbody>
                 {devices.map(d => (
                   <tr key={d.id}>
-                    <td style={{ fontWeight: 500, fontSize: '0.95rem' }}><Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />{d.ssid_name || d.name}</td>
+                    <td style={{ fontWeight: 500, fontSize: '0.95rem' }}><Wifi size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: 'var(--accent-blue)' }} />{cleanName(d.ssid_name || d.name)}</td>
                     <td style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{d.serial_number}</td>
                     <td style={{ fontSize: '0.9rem', color: 'var(--accent-blue)' }}>{d.pppoe_username || '-'}</td>
                     <td><span style={{ padding: '3px 8px', borderRadius: 4, fontSize: '0.83rem', fontWeight: 600, background: d.vendor === 'Huawei' ? 'rgba(229,57,53,0.06)' : d.vendor === 'ZTE' ? 'rgba(33,150,243,0.06)' : 'rgba(67,160,71,0.06)', color: d.vendor === 'Huawei' ? '#e53935' : d.vendor === 'ZTE' ? '#2196F3' : '#43a047' }}>{d.vendor}</span></td>
