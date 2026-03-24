@@ -79,6 +79,11 @@ export default function Dashboard({ socketStats }) {
     return `${Math.floor(hours / 24)}d ago`;
   }
 
+  function cleanName(name) {
+    if (!name || typeof name !== 'string') return '-';
+    return name.replace(/[_\-\s]*(2\.4|5|2)G(Hz)?.*$/i, '').trim();
+  }
+
   return (
     <div className="dashboard-page">
       <div className="page-header">
@@ -212,7 +217,7 @@ export default function Dashboard({ socketStats }) {
               <div className="alert-content">
                 <div className="alert-title">{alert.message}</div>
                 <div className="alert-meta">
-                  {alert.device_name || `Device #${alert.device_id}`} · <Clock size={11} style={{ verticalAlign: 'middle' }} /> {timeAgo(alert.created_at)}
+                  {cleanName(alert.device_name) || `Device #${alert.device_id}`} · <Clock size={11} style={{ verticalAlign: 'middle' }} /> {timeAgo(alert.created_at)}
                   {alert.resolved ? ' · ✅ Resolved' : ''}
                 </div>
               </div>
