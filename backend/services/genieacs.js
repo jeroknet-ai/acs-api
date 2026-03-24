@@ -191,22 +191,22 @@ function normalizeDevice(genieDevice) {
                        get('DeviceID.ID') || 
                        genieDevice._id || 'N/A';
 
-  // Aggressive Vendor Detection: Check multiple fields for keywords
-  const manufacturer = get('Device.DeviceInfo.Manufacturer') || get('InternetGatewayDevice.DeviceInfo.Manufacturer') || genieDevice._deviceId?._Manufacturer || '';
-  const description = get('Device.DeviceInfo.Description') || get('InternetGatewayDevice.DeviceInfo.Description') || '';
-  const modelName = get('Device.DeviceInfo.ModelName') || get('InternetGatewayDevice.DeviceInfo.ModelName') || genieDevice._deviceId?._ProductClass || '';
-  const modelNumber = get('Device.DeviceInfo.ModelNumber') || '';
-  
-  const searchString = `${manufacturer} ${description} ${modelName} ${modelNumber} ${genieDevice._id || ''}`.toLowerCase();
-
+  // Ultra-Aggressive Catch-all Vendor Detection
+  const rawJson = JSON.stringify(genieDevice).toLowerCase();
   let vendor = 'Unknown';
-  if (searchString.includes('huawei')) vendor = 'Huawei';
-  else if (searchString.includes('zte')) vendor = 'ZTE';
-  else if (searchString.includes('fiberhome') || searchString.includes('fh_')) vendor = 'Fiberhome';
-  else if (searchString.includes('nokia') || searchString.includes('alcatel-lucent')) vendor = 'Nokia';
-  else if (searchString.includes('tplink') || searchString.includes('tp-link')) vendor = 'TP-Link';
-  else if (searchString.includes('totolink')) vendor = 'TOTOLINK';
-  else if (manufacturer) vendor = manufacturer; // Fallback to literal manufacturer if no keyword match
+  if (rawJson.includes('huawei')) vendor = 'Huawei';
+  else if (rawJson.includes('zte')) vendor = 'ZTE';
+  else if (rawJson.includes('fiberhome') || rawJson.includes('fh_')) vendor = 'Fiberhome';
+  else if (rawJson.includes('nokia') || rawJson.includes('alcatel-lucent')) vendor = 'Nokia';
+  else if (rawJson.includes('tplink') || rawJson.includes('tp-link')) vendor = 'TP-Link';
+  else if (rawJson.includes('totolink')) vendor = 'TOTOLINK';
+  else {
+      // Fallback to literal Manufacturer field if exists
+      const manufacturer = get('Device.DeviceInfo.Manufacturer') || 
+                           get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
+                           genieDevice._deviceId?._Manufacturer || '';
+      if (manufacturer) vendor = manufacturer;
+  }
 
   // Aggressive Model Detection
   let model = get('Device.DeviceInfo.ModelName') || 
