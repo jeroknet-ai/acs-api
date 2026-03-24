@@ -6,6 +6,19 @@ import {
 import { getDevices, rebootDevice, refreshDevice } from '../services/api';
 import api from '../services/api';
 
+// ──── Helpers ────
+function formatUptime(s) {
+  if (!s) return '-';
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
+  return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.floor((s % 3600) / 60)}m`;
+}
+
+function cleanName(name) {
+  if (!name || typeof name !== 'string') return '-';
+  // Deep clean SSID: remove common suffixes _2.4G, -5G, etc
+  return name.replace(/[_\-\s]*(2\.4|5|2)G(Hz)?.*$/i, '').trim();
+}
+
 // ──── Device Detail Modal ────
 function DeviceDetailModal({ device, onClose, onSave }) {
   const [tab, setTab] = useState('info');
@@ -55,17 +68,8 @@ function DeviceDetailModal({ device, onClose, onSave }) {
 
   if (!device) return null;
 
-  function formatUptime(s) {
-    if (!s) return '-';
-    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
-    return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.floor((s % 3600) / 60)}m`;
   }
 
-  function cleanName(name) {
-    if (!name || typeof name !== 'string') return '-';
-    // Deep clean SSID: remove common suffixes _2.4G, -5G, etc
-    return name.replace(/[_\-\s]*(2\.4|5|2)G(Hz)?.*$/i, '').trim();
-  }
 
   function updateSsid(id, field, val) {
     setSsidList(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
@@ -365,11 +369,8 @@ export default function Devices() {
     } catch { alert('Failed'); }
   }
 
-  function formatUptime(s) {
-    if (!s) return '-';
-    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
-    return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.floor((s % 3600) / 60)}m`;
   }
+
 
   // RX Power statistics
   const rxValues = allDevices.filter(d => d.rx_power != null).map(d => d.rx_power);
