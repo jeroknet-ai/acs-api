@@ -167,24 +167,34 @@ function normalizeDevice(genieDevice) {
                        get('DeviceID.ID') || 
                        genieDevice._id || 'N/A';
 
-  // Smart detection for Vendor/Manufacturer
+  // Aggressive Vendor Detection: Check Manufacturer, then Description, then even the Serial Prefix
   let vendor = get('Device.DeviceInfo.Manufacturer') || 
                get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
+               get('Device.DeviceInfo.Description') || 
+               get('InternetGatewayDevice.DeviceInfo.Description') || 
                get('_Manufacturer') || 'Unknown';
                
-  // Standardize Vendor naming
-  if (vendor.toLowerCase().includes('huawei')) vendor = 'Huawei';
-  if (vendor.toLowerCase().includes('zte')) vendor = 'ZTE';
-  if (vendor.toLowerCase().includes('fiberhome')) vendor = 'Fiberhome';
-  if (vendor.toLowerCase().includes('nokia')) vendor = 'Nokia';
+  // Standardize Vendor naming (Clean up weird strings like "HUAWEI TECHNOLOGIES CO., LTD")
+  const vLower = vendor.toLowerCase();
+  if (vLower.includes('huawei')) vendor = 'Huawei';
+  else if (vLower.includes('zte')) vendor = 'ZTE';
+  else if (vLower.includes('fiberhome')) vendor = 'Fiberhome';
+  else if (vLower.includes('nokia')) vendor = 'Nokia';
+  else if (vLower.includes('tplink') || vLower.includes('tp-link')) vendor = 'TP-Link';
 
-  // Smart detection for Model
-  const model = get('Device.DeviceInfo.ModelName') || 
-                get('InternetGatewayDevice.DeviceInfo.ModelName') || 
-                get('Device.DeviceInfo.ModelNumber') ||
-                get('Device.DeviceInfo.Description') || 
-                get('InternetGatewayDevice.DeviceInfo.Description') ||
-                get('_ModelName') || 'Unknown';
+  // Aggressive Model Detection
+  let model = get('Device.DeviceInfo.ModelName') || 
+              get('InternetGatewayDevice.DeviceInfo.ModelName') || 
+              get('Device.DeviceInfo.ModelNumber') ||
+              get('Device.DeviceInfo.ModelDescription') ||
+              get('Device.DeviceInfo.Description') || 
+              get('InternetGatewayDevice.DeviceInfo.Description') ||
+              get('_ModelName') || 'Unknown';
+              
+  // Clean model string if it repeats vendor name
+  if (model.toLowerCase().startsWith(vendor.toLowerCase())) {
+     model = model.substring(vendor.length).trim().replace(/^[-_]/, '').trim();
+  }
 
   // Smart detection for IP Address
   const ipAddress = get('Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress') ||
