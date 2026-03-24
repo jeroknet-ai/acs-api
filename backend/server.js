@@ -144,12 +144,12 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 pollGenieACS();
 
 // ==========================================
-// Serve Static Frontend (Fail-Proof Production)
+// Serve Static Frontend (Final Resilience)
 // ==========================================
 const distPath = path.join(__dirname, 'public');
 
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
-  console.log(`✅ SERVER: Serving production assets from: ${distPath}`);
+  console.log(`✅ PROD: Serving assets from: ${distPath}`);
   app.use(express.static(distPath));
   // Catch-all for SPA routing
   app.get('*', (req, res) => {
@@ -158,12 +158,12 @@ if (fs.existsSync(path.join(distPath, 'index.html'))) {
 } else {
   // Local development fallback
   const localDist = path.join(__dirname, '../frontend/dist');
+  console.log(`ℹ️ Checking local dist: ${localDist}`);
   if (fs.existsSync(localDist)) {
-    console.log(`ℹ️ SERVER: Serving local dev assets from: ${localDist}`);
     app.use(express.static(localDist));
     app.get('*', (req, res) => res.sendFile(path.join(localDist, 'index.html')));
   } else {
-    console.log('❌ CRITICAL: Frontend static files not found!');
+    console.log('❌ CRITICAL: No static assets found!');
   }
 }
 

@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────
-# LITE DOCKERFILE (Single Stage - Best for ARM STB)
+# LITE DOCKERFILE (Production Alignment)
 # ──────────────────────────────────────────
 FROM node:18-alpine
 WORKDIR /app
@@ -7,15 +7,15 @@ WORKDIR /app
 # 1. Install compiler tools for ARM SQLite
 RUN apk add --no-cache python3 make g++ gcc
 
-# 2. Setup Backend Dependencies
+# 2. Setup Dependencies
 COPY backend/package*.json ./
 RUN npm install --omit=dev
 
 # 3. Copy Backend code
 COPY backend/ ./
 
-# 4. Copy PRE-BUILT Frontend from laptop to 'public'
-# Pastikan folder 'dist' di laptop terisi (npm run build di laptop)
+# 4. Copy PRE-BUILT Frontend to the local 'public' folder
+# This ensures path.join(__dirname, 'public') always works
 RUN mkdir -p /app/public
 COPY frontend/dist/ /app/public/
 
