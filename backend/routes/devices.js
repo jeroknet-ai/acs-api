@@ -23,8 +23,8 @@ router.get('/', (req, res) => {
       params.push(vendor);
     }
     if (search) {
-      conditions.push(`(d.name LIKE ? OR d.serial_number LIKE ? OR d.model LIKE ? OR d.pppoe_username LIKE ? OR EXISTS (SELECT 1 FROM json_each(dc.config_data) WHERE json_extract(value, '$.ssid') LIKE ?))`);
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      conditions.push(`(d.name LIKE ? OR d.serial_number LIKE ? OR d.model LIKE ? OR d.pppoe_username LIKE ?)`);
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (conditions.length > 0) {
