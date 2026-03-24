@@ -7,12 +7,6 @@ import { getDevices, rebootDevice, refreshDevice } from '../services/api';
 import api from '../services/api';
 
 // ──── Helpers ────
-function formatUptime(s) {
-  if (!s) return '-';
-  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600);
-  return d > 0 ? `${d}d ${h}h` : `${h}h ${Math.floor((s % 3600) / 60)}m`;
-}
-
 function cleanName(name) {
   if (!name || typeof name !== 'string') return '-';
   // Deep clean SSID: remove common suffixes _2.4G, -5G, etc
@@ -496,17 +490,13 @@ export default function Devices() {
       </div>
     );
   } catch (err) {
-    console.error('CRITICAL RENDER ERROR:', err);
+    console.error('DEVICE RENDER ERROR:', err);
     return (
-      <div style={{ padding: 30, background: '#fff0f0', border: '2px solid #ff4d4f', borderRadius: 12, margin: 20 }}>
-        <h3 style={{ color: '#ff4d4f', marginBottom: 12 }}>🚨 Terjadi Kesalahan Tampilan</h3>
-        <p style={{ fontSize: '0.9rem', marginBottom: 15 }}>Halaman tidak bisa dimuat karena data tidak valid atau ada kegagalan internal.</p>
-        <pre style={{ background: '#000', color: '#0f0', padding: 10, borderRadius: 6, fontSize: '0.8rem', overflow: 'auto' }}>
-          {err.message}\n{err.stack}
-        </pre>
-        <button className="btn btn-primary" style={{ marginTop: 15 }} onClick={() => window.location.reload()}>Muat Ulang Halaman</button>
+      <div style={{ padding: 20, color: 'red' }}>
+        <h3>Render Error</h3>
+        <pre>{err.stack}</pre>
       </div>
     );
   }
 }
-}
+

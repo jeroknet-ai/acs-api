@@ -9,7 +9,13 @@ const api = axios.create({
 });
 
 // Devices
-export const getDevices = (params = {}) => api.get('/devices', { params });
+export const getDevices = (params) => {
+  console.log('📡 API CALL: getDevices', params);
+  return api.get('/devices', { params }).then(res => {
+    console.log('📡 API RES: getDevices', res.data?.data?.length, 'items');
+    return res;
+  });
+};
 export const getDeviceStats = () => api.get('/devices/stats');
 export const getDevice = (id) => api.get(`/devices/${id}`);
 export const rebootDevice = (id) => api.post(`/devices/${id}/reboot`);
