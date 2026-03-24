@@ -15,9 +15,9 @@ RUN npm install --omit=dev
 COPY backend/ ./
 
 # 4. Copy PRE-BUILT Frontend to the root 'public' folder
-# This is the most DEFINTIVE way to ensure path consistency
+# Using trailing slash to ensure full directory sync
 RUN mkdir -p /public
-COPY frontend/dist/. /public/
+COPY frontend/dist/ /public/
 
 # 5. Start
 ENV PORT=1987

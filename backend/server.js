@@ -171,10 +171,16 @@ if (!fs.existsSync(path.join(distPath, 'index.html'))) {
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   console.log(`✅ STATIC: Serving from ${distPath}`);
   
-  // 1. Explicitly serve assets with correct MIME types BEFORE general static
+  // 1. DYNAMIC ASSET LOCATOR (Deep Scan)
   app.use('/assets', (req, res, next) => {
-    const filePath = path.join(distPath, 'assets', req.path);
-    if (fs.existsSync(filePath)) {
+    // Try subfolder first
+    let filePath = path.join(distPath, 'assets', req.path);
+    if (!fs.existsSync(filePath)) {
+      // Try root folder fallback (if flattened)
+      filePath = path.join(distPath, req.path);
+    }
+    
+    if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isDirectory()) {
       if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
       if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
       return res.sendFile(filePath);
