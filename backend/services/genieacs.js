@@ -49,6 +49,8 @@ async function fetchDevices(query = {}) {
       'Device.Optical.Interface.1.Stats.TransmitOpticalLevel', 'Device.Optical.Interface.1.TransmitOpticalLevel',
       'InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel',
       'InternetGatewayDevice.Optical.Interface.1.Stats.OpticalSignalLevel',
+      'InternetGatewayDevice.WANDevice.1.X_FH_GponInterfaceConfig.RXPower',
+      'InternetGatewayDevice.WANDevice.1.X_FH_GponInterfaceConfig.TXPower',
       'Device.DeviceInfo.X_HUAWEI_OpticalSignalLevel',
       'Device.DeviceInfo.X_HUAWEI_TransmitOpticalLevel',
       // WiFi / SSID
@@ -56,6 +58,8 @@ async function fetchDevices(query = {}) {
       'Device.WiFi.SSID.1.SSIDName',
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID', 'InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID',
       'InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.X_HUAWEI_SSIDName',
+      'InternetGatewayDevice.LANDevice.1.WLANConfiguration.3.SSID', // Fiberhome 5G
+      'InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.SSID', // Fiberhome 5G alt
       // Uptime
       'Device.DeviceInfo.UpTime', 'InternetGatewayDevice.DeviceInfo.UpTime',
       'Device.ManagementServer.UpTime',
@@ -226,6 +230,7 @@ function normalizeDevice(genieDevice) {
 
   // Multi-vendor RX/TX Power Detection (Huawei, ZTE, Fiberhome, etc.)
   const rxPowerValue = get('VirtualParameters.RXPower') || 
+                       get('InternetGatewayDevice.WANDevice.1.X_FH_GponInterfaceConfig.RXPower') ||
                        get('Device.Optical.Interface.1.Stats.OpticalSignalLevel') ||
                        get('InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANEthernetLinkConfig.OpticalSignalLevel') ||
                        get('Device.Optical.Interface.1.OpticalSignalLevel') ||
@@ -233,6 +238,7 @@ function normalizeDevice(genieDevice) {
                        get('Device.DeviceInfo.X_HUAWEI_OpticalSignalLevel') || null;
 
   const txPowerValue = get('VirtualParameters.TXPower') || 
+                       get('InternetGatewayDevice.WANDevice.1.X_FH_GponInterfaceConfig.TXPower') ||
                        get('Device.Optical.Interface.1.Stats.TransmitOpticalLevel') ||
                        get('Device.Optical.Interface.1.OpticalSignalLevel') ||
                        get('InternetGatewayDevice.Optical.Interface.1.Stats.TransmitOpticalLevel') ||
@@ -243,6 +249,7 @@ function normalizeDevice(genieDevice) {
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID') || 
              get('Device.WiFi.SSID.1.SSIDName') ||
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.X_HUAWEI_SSIDName') ||
+             get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.5.SSID') || // FH 5G
              get('Device.WiFi.SSID.2.SSID') || 
              get('InternetGatewayDevice.LANDevice.1.WLANConfiguration.2.SSID') ||
              get('Device.DeviceInfo.ModelName') || 'N/A';
