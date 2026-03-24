@@ -191,20 +191,22 @@ function normalizeDevice(genieDevice) {
                        get('DeviceID.ID') || 
                        genieDevice._id || 'N/A';
 
-  // Aggressive Vendor Detection: Check Manufacturer, then Description, then even the Serial Prefix
-  let vendor = get('Device.DeviceInfo.Manufacturer') || 
-               get('InternetGatewayDevice.DeviceInfo.Manufacturer') || 
-               get('Device.DeviceInfo.Description') || 
-               get('InternetGatewayDevice.DeviceInfo.Description') || 
-               get('_Manufacturer') || 'Unknown';
-               
-  // Standardize Vendor naming (Clean up weird strings like "HUAWEI TECHNOLOGIES CO., LTD")
-  const vLower = vendor.toLowerCase();
-  if (vLower.includes('huawei')) vendor = 'Huawei';
-  else if (vLower.includes('zte')) vendor = 'ZTE';
-  else if (vLower.includes('fiberhome')) vendor = 'Fiberhome';
-  else if (vLower.includes('nokia')) vendor = 'Nokia';
-  else if (vLower.includes('tplink') || vLower.includes('tp-link')) vendor = 'TP-Link';
+  // Aggressive Vendor Detection: Check multiple fields for keywords
+  const manufacturer = get('Device.DeviceInfo.Manufacturer') || get('InternetGatewayDevice.DeviceInfo.Manufacturer') || '';
+  const description = get('Device.DeviceInfo.Description') || get('InternetGatewayDevice.DeviceInfo.Description') || '';
+  const modelName = get('Device.DeviceInfo.ModelName') || get('InternetGatewayDevice.DeviceInfo.ModelName') || '';
+  const modelNumber = get('Device.DeviceInfo.ModelNumber') || '';
+  
+  const searchString = `${manufacturer} ${description} ${modelName} ${modelNumber} ${genieDevice._id || ''}`.toLowerCase();
+
+  let vendor = 'Unknown';
+  if (searchString.includes('huawei')) vendor = 'Huawei';
+  else if (searchString.includes('zte')) vendor = 'ZTE';
+  else if (searchString.includes('fiberhome') || searchString.includes('fh_')) vendor = 'Fiberhome';
+  else if (searchString.includes('nokia') || searchString.includes('alcatel-lucent')) vendor = 'Nokia';
+  else if (searchString.includes('tplink') || searchString.includes('tp-link')) vendor = 'TP-Link';
+  else if (searchString.includes('totolink')) vendor = 'TOTOLINK';
+  else if (manufacturer) vendor = manufacturer; // Fallback to literal manufacturer if no keyword match
 
   // Aggressive Model Detection
   let model = get('Device.DeviceInfo.ModelName') || 
