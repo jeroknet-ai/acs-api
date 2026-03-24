@@ -153,8 +153,10 @@ db.exec(`
 `);
 
 // Add pppoe_username column if not exists
-try { db.exec('ALTER TABLE devices ADD COLUMN pppoe_username TEXT'); } catch (e) { /* column already exists */ }
-try { db.exec("ALTER TABLE cables ADD COLUMN waypoints TEXT DEFAULT '[]'"); } catch (e) { /* column already exists */ }
+try { db.exec('ALTER TABLE devices ADD COLUMN pppoe_username TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE devices ADD COLUMN device_id TEXT'); } catch (e) {}
+try { db.exec('ALTER TABLE devices ADD COLUMN wan_config TEXT'); } catch (e) {}
+try { db.exec("ALTER TABLE cables ADD COLUMN waypoints TEXT DEFAULT '[]'"); } catch (e) {}
 
 // Create device_configs table for persisting WAN/SSID/User configs
 db.exec(`
