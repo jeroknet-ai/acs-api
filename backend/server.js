@@ -144,6 +144,20 @@ setInterval(pollGenieACS, POLL_INTERVAL);
 pollGenieACS();
 
 // ==========================================
+// Diagnostic Endpoint (Check /public)
+// ==========================================
+app.get('/diag/public', (req, res) => {
+  const distPath = path.join(__dirname, 'public');
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    const assets = fs.existsSync(path.join(distPath, 'assets')) ? fs.readdirSync(path.join(distPath, 'assets')) : 'MISSING';
+    res.json({ status: 'OK', path: distPath, files, assets });
+  } else {
+    res.json({ status: 'ERROR', path: distPath, message: 'Not Found' });
+  }
+});
+
+// ==========================================
 // Serve Static Frontend (Fail-Proof)
 // ==========================================
 const distPath = path.join(__dirname, 'public');
@@ -154,14 +168,17 @@ if (fs.existsSync(path.join(distPath, 'index.html'))) {
   
   // 1. DYNAMIC ASSET LOCATOR (Deep Scan)
   app.use('/assets', (req, res, next) => {
+    console.log(`🔍 ASSET REQUEST: ${req.path}`);
     let filePath = path.join(distPath, 'assets', req.path);
     if (!fs.existsSync(filePath)) filePath = path.join(distPath, req.path);
     
     if (fs.existsSync(filePath) && !fs.lstatSync(filePath).isDirectory()) {
+      console.log(`   -> FOUND: ${filePath}`);
       if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
       if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
       return res.sendFile(filePath);
     }
+    console.log(`   -> NOT FOUND: ${filePath}`);
     next();
   });
 
