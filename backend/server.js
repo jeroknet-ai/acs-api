@@ -96,16 +96,24 @@ io.on('connection', (socket) => {
 async function pollGenieACS() {
   try {
     const rawDevices = await genieacs.fetchDevices();
+    console.log(`📡 Polling: Fetched ${rawDevices?.length || 0} raw devices from GenieACS`);
+    
     if (!rawDevices || rawDevices.length === 0) {
       console.log('⚠️ Polling: No devices found in GenieACS');
       return;
     }
 
-    const currentSerials = rawDevices.map(d => genieacs.normalizeDevice(d)?.serial_number).filter(Boolean);
+    let normalizedCount = 0;
+    const currentSerials = [];
 
     for (const raw of rawDevices) {
       const normalized = genieacs.normalizeDevice(raw);
-      if (!normalized) continue;
+      if (!normalized) {
+        console.log(`⚠️ Polling: Normalization failed for device ${raw._id}`);
+        continue;
+      }
+      normalizedCount++;
+      currentSerials.push(normalized.serial_number);
 
       const lastSeen = new Date().toISOString();
       db.prepare(`
