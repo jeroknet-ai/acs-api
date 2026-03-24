@@ -9,8 +9,19 @@ import api from '../services/api';
 // ──── Helpers ────
 function cleanName(name) {
   if (!name || typeof name !== 'string') return '-';
-  // Deep clean SSID: remove common suffixes _2.4G, -5G, etc
   return name.replace(/[_\-\s]*(2\.4|5|2)G(Hz)?.*$/i, '').trim();
+}
+
+function formatUptime(seconds) {
+  if (!seconds || isNaN(seconds)) return '-';
+  const d = Math.floor(seconds / (3600 * 24));
+  const h = Math.floor((seconds % (3600 * 24)) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  let res = '';
+  if (d > 0) res += `${d}d `;
+  if (h > 0) res += `${h}h `;
+  res += `${m}m`;
+  return res;
 }
 
 // ──── Device Detail Modal ────
@@ -455,8 +466,9 @@ export default function Devices() {
                       <td style={{ fontWeight: 500 }}>{d.rx_power ? `${d.rx_power} dBm` : '-'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          <button className="btn-icon" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
-                          <button className="btn-icon" onClick={() => api.post(`/devices/${d.id}/refresh`)}><RefreshCw size={14} /></button>
+                          <button className="btn-icon" title="Detail" onClick={() => setSelectedDevice(d)}><Eye size={14} /></button>
+                          <button className="btn-icon" title="Refresh" onClick={() => api.post(`/devices/${d.id}/refresh`).catch(() => {})}><RefreshCw size={14} /></button>
+                          <button className="btn-icon" title="Hapus" style={{ color: 'var(--accent-red)' }} onClick={() => handleDelete(d.id)}><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>
@@ -487,7 +499,7 @@ export default function Devices() {
         <DeviceDetailModal 
           device={selectedDevice} 
           onClose={() => setSelectedDevice(null)} 
-          onSave={() => { setPage(1); fetchAll(); }} 
+          onSave={() => { fetchAll(); setPage(1); }} 
         />
       )}
     </div>
