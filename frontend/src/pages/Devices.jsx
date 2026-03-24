@@ -325,14 +325,11 @@ export default function Devices() {
         if (vendorFilter) params.vendor = vendorFilter;
         if (debouncedSearch) params.search = debouncedSearch;
         
-        console.log('📡 FETCHING DEVICES...', params);
         const res = await getDevices(params);
         
         if (isMounted) {
           const data = res.data?.data || [];
           const pag = res.data?.pagination || { total: 0, totalPages: 1, limit, page };
-          console.log(`📡 FETCH SUCCESS: ${data.length} items, total ${pag.total}`);
-          
           setDevices(data);
           setPagination(pag);
         }
@@ -361,8 +358,9 @@ export default function Devices() {
     if (!window.confirm('Hapus perangkat dari database?')) return;
     try {
       await api.delete(`/devices/${id}`);
-      fetchDevices();
       fetchAll();
+      // Force refresh current page
+      setPage(p => p); 
     } catch (err) {
       console.error('Delete failed:', err);
       alert('Gagal menghapus perangkat');
@@ -376,28 +374,8 @@ export default function Devices() {
   const rxWarn = rxValues.filter(v => v < -25 && v >= -28).length;
   const rxCrit = rxValues.filter(v => v < -28).length;
 
-  // ──── Ultimate Defensive Render ────
-  console.log('💎 DEVICES RENDER TRIGGERED:', { devices: devices?.length, loading, page });
-  
-  if (typeof window !== 'undefined') {
-    window.FORCE_RENDER = () => {
-      setPage(p => p);
-      fetchAll();
-      console.log('🚀 FORCE RENDER CALLED');
-    };
-  }
-
   return (
-    <div className="devices-page" style={{ position: 'relative' }}>
-      {/* Super Diagnostic Button */}
-      <button 
-        className="btn btn-primary btn-sm"
-        style={{ position: 'fixed', top: 10, right: 150, zIndex: 9999, boxShadow: '0 0 15px rgba(0,0,0,0.5)' }}
-        onClick={() => { console.log('🔥 SUPER RESET'); fetchAll(); setPage(1); }}
-      >
-        DIAGNOSTIC RESET
-      </button>
-
+    <div className="devices-page">
       <div className="page-header">
         <h1>Device Management</h1>
         <p>Kelola dan monitoring semua perangkat ONT</p>
