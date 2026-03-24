@@ -305,6 +305,7 @@ export default function Devices() {
 
   // Fetch devices whenever filters change
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         setLoading(true);
@@ -313,42 +314,37 @@ export default function Devices() {
         if (vendorFilter) params.vendor = vendorFilter;
         if (debouncedSearch) params.search = debouncedSearch;
         
-        console.log('📡 FETCH DEVICES:', params);
+        console.log('📡 FETCHING DEVICES...', params);
         const res = await getDevices(params);
-        console.log('📡 FETCH SUCCESS:', res.data?.data?.length, 'devices found');
         
-        setDevices(res.data?.data || []);
-        setPagination(res.data?.pagination || {});
+        if (isMounted) {
+          const data = res.data?.data || [];
+          const pag = res.data?.pagination || { total: 0, totalPages: 1, limit, page };
+          console.log(`📡 FETCH SUCCESS: ${data.length} items, total ${pag.total}`);
+          
+          setDevices(data);
+          setPagination(pag);
+        }
       } catch (err) { 
         console.error('📡 FETCH ERROR:', err);
       } finally { 
-        setLoading(false); 
+        if (isMounted) setLoading(false); 
       }
     })();
+    return () => { isMounted = false; };
   }, [page, statusFilter, vendorFilter, debouncedSearch, limit]);
 
   useEffect(() => { fetchAll(); }, []);
 
-  async function fetchDevices() {
-    try {
-      setLoading(true);
-      const params = { page, limit };
-      if (statusFilter) params.status = statusFilter;
-      if (vendorFilter) params.vendor = vendorFilter;
-      if (debouncedSearch) params.search = debouncedSearch;
-      const res = await getDevices(params);
-      setDevices(res.data.data);
-      setPagination(res.data.pagination);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  }
-
   async function fetchAll() {
     try {
       const res = await getDevices({ limit: 999 });
-      setAllDevices(res.data.data);
-    } catch {}
+      setAllDevices(res.data?.data || []);
+    } catch (err) {
+      console.error('fetchAll failed:', err);
+    }
   }
+
 
   async function handleDelete(id) {
     if (!window.confirm('Hapus perangkat dari database?')) return;
