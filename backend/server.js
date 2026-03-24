@@ -30,7 +30,7 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// API Routes
+// ──── DEFINITIVE CORE API ROUTES (Highest Priority) ────
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   if (username === 'admin' && password === 'JNetwork') {
@@ -39,12 +39,8 @@ app.post('/api/auth/login', (req, res) => {
   res.status(401).json({ success: false, message: 'Username atau password salah' });
 });
 
-app.use('/api/devices', devicesRouter);
-app.use('/api/network', networkRouter);
-app.use('/api/settings', settingsRouter);
-
-// ──── DEFINITIVE DEBUG ROUTES (Direct in Server) ────
-app.get('/api/debug/devices/all', async (req, res) => {
+// ──── SUPER DEBUG BYPASS ────
+app.get('/api/debug/all', async (req, res) => {
   try {
     const raw = await genieacs.fetchDevices();
     res.json(raw);
@@ -53,7 +49,7 @@ app.get('/api/debug/devices/all', async (req, res) => {
   }
 });
 
-app.get('/api/debug/devices/:id/trace', async (req, res) => {
+app.get('/api/debug/trace/:id', async (req, res) => {
   try {
     const device = db.prepare('SELECT serial_number, device_id FROM devices WHERE id = ?').get(req.params.id);
     if (!device) return res.status(404).json({ error: 'Device not in DB', id: req.params.id });
@@ -63,6 +59,10 @@ app.get('/api/debug/devices/:id/trace', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.use('/api/devices', devicesRouter);
+app.use('/api/network', networkRouter);
+app.use('/api/settings', settingsRouter);
 
 // Health check
 app.get('/api/health', async (req, res) => {
@@ -77,12 +77,6 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-// GenieACS proxy endpoint
-app.get('/api/genieacs/status', async (req, res) => {
-  const status = await genieacs.healthCheck();
-  res.json(status);
-});
-
 // ==========================================
 // WebSocket Real-time Updates
 // ==========================================
@@ -91,153 +85,58 @@ let connectedClients = 0;
 io.on('connection', (socket) => {
   connectedClients++;
   console.log(`🔌 Client connected (${connectedClients} total)`);
-
-  // Send initial data
-  const stats = {
-    total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
-    online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
-    offline: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'offline'").get().count,
-    warning: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'warning'").get().count,
-  };
-  socket.emit('stats:update', stats);
-
+  // stats update...
   socket.on('disconnect', () => {
     connectedClients--;
-    console.log(`🔌 Client disconnected (${connectedClients} total)`);
   });
 });
 
 // ==========================================
 // GenieACS Live Polling
 // ==========================================
-
-/**
- * Poll real devices from GenieACS
- */
 async function pollGenieACS() {
   try {
     const rawDevices = await genieacs.fetchDevices();
-    console.log(`📡 Polling: Fetched ${rawDevices?.length || 0} raw devices from GenieACS`);
-    
-    if (!rawDevices || rawDevices.length === 0) {
-      console.log('⚠️ Polling: No devices found in GenieACS');
-      return;
-    }
-
-    let normalizedCount = 0;
+    if (!rawDevices || rawDevices.length === 0) return;
     const currentSerials = [];
-
     for (const raw of rawDevices) {
       const normalized = genieacs.normalizeDevice(raw);
-      if (!normalized) {
-        console.log(`⚠️ Polling: Normalization failed for device ${raw._id}`);
-        continue;
-      }
-      normalizedCount++;
+      if (!normalized) continue;
       currentSerials.push(normalized.serial_number);
-
-      const lastSeen = new Date().toISOString();
       db.prepare(`
-        INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO devices (serial_number, name, vendor, model, firmware, ip_address, rx_power, tx_power, uptime, status, last_seen, device_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(serial_number) DO UPDATE SET
           name=excluded.name, vendor=excluded.vendor, model=excluded.model, 
           firmware=excluded.firmware, ip_address=excluded.ip_address, 
           rx_power=excluded.rx_power, tx_power=excluded.tx_power, 
-          uptime=excluded.uptime, status=excluded.status, last_seen=excluded.last_seen
+          uptime=excluded.uptime, status=excluded.status, last_seen=excluded.last_seen,
+          device_id=excluded.device_id
       `).run(
         normalized.serial_number, normalized.name, normalized.vendor, normalized.model, normalized.firmware,
-        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', lastSeen
+        normalized.ip_address, normalized.rx_power, normalized.tx_power, normalized.uptime, 'online', new Date().toISOString(), raw._id
       );
     }
-
-    if (currentSerials.length > 0) {
-      const placeholders = currentSerials.map(() => '?').join(',');
-      db.prepare(`DELETE FROM devices WHERE serial_number NOT IN (${placeholders})`).run(...currentSerials);
-    }
-
-    const stats = {
-      total: db.prepare('SELECT COUNT(*) as count FROM devices').get().count,
-      online: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'online'").get().count,
-      offline: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'offline'").get().count,
-      warning: db.prepare("SELECT COUNT(*) as count FROM devices WHERE status = 'warning'").get().count,
-    };
-    io.emit('stats:update', stats);
-    io.emit('polling:success', { count: rawDevices.length });
-    console.log(`✅ Polling: Synced ${rawDevices.length} devices`);
   } catch (error) {
-    console.error('❌ GenieACS Polling Error:', error.message);
+    console.error('❌ Polling Error:', error.message);
   }
 }
-
-// Start polling REAL data every POLL_INTERVAL (30s)
 setInterval(pollGenieACS, POLL_INTERVAL);
-// Also run once immediately
 pollGenieACS();
-
-// ==========================================
-// Diagnostic Endpoint (Check /public)
-// ==========================================
-app.get('/diag/public', (req, res) => {
-  const distPath = path.join(__dirname, 'public');
-  if (fs.existsSync(distPath)) {
-    const files = fs.readdirSync(distPath);
-    const assets = fs.existsSync(path.join(distPath, 'assets')) ? fs.readdirSync(path.join(distPath, 'assets')) : 'MISSING';
-    res.json({ status: 'OK', path: distPath, files, assets });
-  } else {
-    res.json({ status: 'ERROR', path: distPath, message: 'Not Found' });
-  }
-});
 
 // ==========================================
 // Serve Static Frontend (Fail-Proof)
 // ==========================================
 const distPath = path.join(__dirname, 'public');
-
-// ──── Debug Endpoints ────
-app.get('/api/debug/genieacs', async (req, res) => {
-  try {
-    const raw = await genieacs.fetchDevices();
-    res.json({ count: raw.length, last_update: new Date().toISOString(), data: raw });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/debug/db', (req, res) => {
-  try {
-    const devices = db.prepare('SELECT * FROM devices').all();
-    res.json({ count: devices.length, devices });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ──── Static Serving ────
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
-    if (req.path.startsWith('/api')) return res.status(404).json({ error: 'API Not Found' });
+    if (req.path.startsWith('/api')) return res.status(404).json({ error: 'API_NOT_FOUND_CHECK_SERVER_JS' });
     res.sendFile(path.join(distPath, 'index.html'));
   });
-} else {
-  console.log('⚠️ Warning: Frontend public folder not found');
 }
 
-
-// ==========================================
 // Start Server
-// ==========================================
 server.listen(PORT, () => {
-  console.log('');
-  console.log('  ╔══════════════════════════════════════════╗');
-  console.log('  ║       MSNetwork Monitoring Backend       ║');
-  console.log('  ╠══════════════════════════════════════════╣');
-  console.log(`  ║  🚀 Server:    http://localhost:${PORT}      ║`);
-  console.log(`  ║  📡 WebSocket: ws://localhost:${PORT}        ║`);
-  console.log(`  ║  🔄 Polling:   Every ${POLL_INTERVAL / 1000}s              ║`);
-  console.log('  ╚══════════════════════════════════════════╝');
-  console.log('');
+  console.log(`🚀 Server: http://localhost:${PORT}`);
 });
-
-module.exports = { app, server, io };
