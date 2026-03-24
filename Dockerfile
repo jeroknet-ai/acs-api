@@ -11,13 +11,8 @@ RUN apk add --no-cache python3 make g++ gcc
 COPY backend/package*.json ./
 RUN npm install --omit=dev
 
-# 3. Copy Backend Files (Forcing absolute freshness)
-# Explicitly copy each folder to ensure no cache misses
-COPY backend/server.js ./
-COPY backend/db/ ./db/
-COPY backend/routes/ ./routes/
-COPY backend/services/ ./services/
-COPY backend/public/ ./public/
+# 3. Copy Backend Files
+COPY backend/ ./
 
 # 4. Start
 ENV PORT=1987
