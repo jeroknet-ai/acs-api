@@ -149,7 +149,8 @@ pollGenieACS();
 const distPath = path.join(__dirname, 'public');
 
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
-  console.log(`✅ PROD: Serving assets from: ${distPath}`);
+  const assetsExist = fs.existsSync(path.join(distPath, 'assets'));
+  console.log(`✅ PROD: Serving assets from: ${distPath} (Assets folder: ${assetsExist ? 'Found' : 'MISSING!'})`);
   app.use(express.static(distPath));
   // Catch-all for SPA routing
   app.get('*', (req, res) => {
