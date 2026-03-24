@@ -43,6 +43,27 @@ app.use('/api/devices', devicesRouter);
 app.use('/api/network', networkRouter);
 app.use('/api/settings', settingsRouter);
 
+// ──── DEFINITIVE DEBUG ROUTES (Direct in Server) ────
+app.get('/api/debug/devices/all', async (req, res) => {
+  try {
+    const raw = await genieacs.fetchDevices();
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/debug/devices/:id/trace', async (req, res) => {
+  try {
+    const device = db.prepare('SELECT serial_number, device_id FROM devices WHERE id = ?').get(req.params.id);
+    if (!device) return res.status(404).json({ error: 'Device not in DB', id: req.params.id });
+    const raw = await genieacs.fetchDevice(device.device_id || device.serial_number);
+    res.json(raw);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Health check
 app.get('/api/health', async (req, res) => {
   const genieStatus = await genieacs.healthCheck();
