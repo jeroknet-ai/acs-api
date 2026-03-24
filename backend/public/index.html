@@ -11,21 +11,6 @@
     <link rel="stylesheet" crossorigin href="./assets/index-BiCJat1N.css">
   </head>
   <body>
-    <!-- Emergency Error Catcher -->
-    <div id="error-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background: #900; color: white; padding: 20px; z-index: 9999; font-family: monospace;">
-      <h2>🚨 JNetwork Error Detected</h2>
-      <pre id="error-details" style="white-space: pre-wrap; word-break: break-all;"></pre>
-    </div>
-    <script>
-      window.onerror = function(msg, url, line) {
-        document.getElementById('error-screen').style.display = 'block';
-        document.getElementById('error-details').innerText = 'ERROR: ' + msg + '\nURL: ' + url + '\nLINE: ' + line;
-      };
-      window.onunhandledrejection = function(event) {
-        document.getElementById('error-screen').style.display = 'block';
-        document.getElementById('error-details').innerText = 'PROMISE REJECTION: ' + event.reason;
-      };
-    </script>
     <div id="root"></div>
   </body>
 </html>
