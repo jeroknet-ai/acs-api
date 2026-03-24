@@ -14,10 +14,11 @@ RUN npm install --omit=dev
 # 3. Copy Backend code
 COPY backend/ ./
 
-# 4. Copy PRE-BUILT Frontend to the root 'public' folder
-# Using trailing slash to ensure full directory sync
-RUN mkdir -p /public
-COPY frontend/dist/ /public/
+# 4. Copy PRE-BUILT Frontend ASSETS (Zip for absolute sync)
+# Terkadang COPY folder di ARM bermasalah, jadi kita pakai ZIP agar pasti
+RUN apk add --no-cache unzip
+COPY frontend/dist.zip /app/dist.zip
+RUN unzip /app/dist.zip -d /public && rm /app/dist.zip
 
 # 5. Start
 ENV PORT=1987
